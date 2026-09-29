@@ -111,30 +111,9 @@
             background-color: #000000;
             border: 1px solid var(--border-color);
             border-radius: 6px;
-            height: 200px;
+            height: 150px;
             overflow-y: auto;
-            padding: 15px;
-            display: flex;
-            flex-direction: column;
-            gap: 10px;
-        }
-
-        .msg-bot {
-            background-color: #1a1a1a;
-            border: 1px solid var(--border-color);
             padding: 10px;
-            border-radius: 6px;
-            align-self: flex-start;
-            max-width: 85%;
-        }
-
-        .msg-user {
-            background-color: #333333;
-            color: #ffffff;
-            padding: 10px;
-            border-radius: 6px;
-            align-self: flex-end;
-            max-width: 85%;
         }
 
         footer {
@@ -180,34 +159,8 @@
             <h3><i class="fa-solid fa-fire me-2"></i>Vitrine de Produtos</h3>
         </div>
 
-        <div class="row g-4 mb-5" id="listaProdutos">
+        <div class="row g-4" id="listaProdutos">
             <!-- Anúncios carregados do Firebase -->
-        </div>
-
-        <!-- Chat de Atendimento Automático (De volta!) -->
-        <div class="row justify-content-center mt-5">
-            <div class="col-md-8">
-                <div class="card bg-dark border-secondary">
-                    <div class="card-header border-secondary d-flex justify-content-between align-items-center">
-                        <span><i class="fa-solid fa-headset me-2"></i>Atendimento Automático Shorye Bot</span>
-                        <span class="badge bg-success">Online</span>
-                    </div>
-                    <div class="card-body">
-                        <div class="chat-box mb-3" id="chatBoxAtendimento">
-                            <div class="msg-bot">
-                                Olá! Seja bem-vindo ao <b>Shorye Vendas</b>. Escolha uma opção digitando o número correspondente:<br>
-                                1️⃣ Como comprar?<br>
-                                2️⃣ Formas de pagamento<br>
-                                3️⃣ Suporte / Falar com o Dono
-                            </div>
-                        </div>
-                        <div class="input-group">
-                            <input type="text" id="inputChatMsg" class="form-control" placeholder="Digite 1, 2 ou 3..." onkeypress="verificarEnterChat(event)">
-                            <button class="btn btn-white-custom" type="button" onclick="enviarMensagemChat()">Enviar</button>
-                        </div>
-                    </div>
-                </div>
-            </div>
         </div>
     </main>
 
@@ -294,10 +247,21 @@
                         <label class="form-label">Descrição</label>
                         <textarea id="descProd" class="form-control" rows="2" placeholder="Detalhes..."></textarea>
                     </div>
-                    <div class="mb-3">
-                        <label class="form-label">Conteúdo da Entrega (Vinculado à Key)</label>
-                        <textarea id="conteudoEntrega" class="form-control" rows="3" placeholder="Ex: Login: user | Senha: 123" required></textarea>
+
+                    <!-- NOVO: Tipo de Entrega e Configuração da Mensagem -->
+                    <div class="mb-2">
+                        <label class="form-label text-warning"><i class="fa-solid fa-truck-fast me-1"></i> Tipo de Entrega</label>
+                        <select id="tipoEntrega" class="form-select">
+                            <option value="auto">1. Automática (O sistema envia direto ao resgatar)</option>
+                            <option value="manual">2. Manual (Espera você mandar a mensagem primeiro)</option>
+                        </select>
                     </div>
+
+                    <div class="mb-3">
+                        <label class="form-label text-warning"><i class="fa-solid fa-message me-1"></i> Configurar o que o bot vai enviar:</label>
+                        <textarea id="conteudoEntrega" class="form-control" rows="3" placeholder="Ex: Login: user | Senha: 123 (Conteúdo que será entregue ao comprador)" required></textarea>
+                    </div>
+
                     <button type="submit" class="btn btn-white-custom w-100">Publicar Anúncio</button>
                 </form>
             </div>
@@ -318,7 +282,7 @@
                 <button type="button" class="btn btn-white-custom w-100 mb-3" onclick="gerarKeyParaProduto()">Gerar Nova Key</button>
                 
                 <label class="form-label">Keys Geradas:</label>
-                <div class="chat-box" id="listaKeysGeradas" style="height: 130px;">
+                <div class="chat-box" id="listaKeysGeradas">
                     <span class="text-muted small">Nenhuma key gerada ainda.</span>
                 </div>
             </div>
@@ -343,9 +307,9 @@
     <div class="modal fade" id="modalEntregaSucesso" tabindex="-1" data-bs-backdrop="static">
         <div class="modal-dialog modal-dialog-centered">
             <div class="modal-content p-4">
-                <h4 class="mb-3 text-success"><i class="fa-solid fa-check-circle me-2"></i>Resgate Realizado!</h4>
-                <p class="small text-muted mb-2">Aqui está o seu produto:</p>
-                <div class="msg-bot mb-3 w-100" style="max-width: 100%;">
+                <h4 class="mb-3 text-success" id="tituloModalEntrega"><i class="fa-solid fa-check-circle me-2"></i>Resgate Realizado!</h4>
+                <p class="small text-muted mb-2" id="descricaoModalEntrega">Aqui está o seu produto:</p>
+                <div class="p-3 bg-black border border-secondary rounded mb-3">
                     <p class="mb-0 text-white" id="textoProdutoResgatado" style="white-space: pre-wrap;"></p>
                 </div>
                 <button type="button" class="btn btn-white-custom w-100" data-bs-dismiss="modal">Fechar</button>
@@ -356,7 +320,6 @@
     <!-- Bootstrap JS e Lógica do Firebase -->
     <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
     <script>
-        // Suas credenciais reais do Firebase
         const firebaseConfig = {
             apiKey: "AIzaSyDXDJnnLyfe2WYQIiMAJ5mIV-4-e4xmMWY",
             authDomain: "shorye-vendas.firebaseapp.com",
@@ -419,10 +382,7 @@
             const senhaInput = document.getElementById('authSenha').value.trim();
 
             if(!usuarioInput || !senhaInput) return alert('Preencha usuário e senha!');
-
-            if(!db) {
-                return alert('Erro de conexão com o banco de dados do Firebase.');
-            }
+            if(!db) return alert('Erro de conexão com o banco de dados do Firebase.');
 
             try {
                 let snapshot = await db.collection("usuarios").get();
@@ -582,6 +542,7 @@
                 preco: document.getElementById('precoProd').value,
                 foto: document.getElementById('fotoProd').value,
                 descricao: document.getElementById('descProd').value,
+                tipoEntrega: document.getElementById('tipoEntrega').value,
                 conteudo: document.getElementById('conteudoEntrega').value
             };
 
@@ -589,7 +550,7 @@
 
             document.getElementById('formAnuncio').reset();
             bootstrap.Modal.getInstance(document.getElementById('modalAnuncio')).hide();
-            alert('Anúncio criado e sincronizado na nuvem!');
+            alert('Anúncio criado com sucesso com as configurações de entrega!');
         });
 
         function escutarDadosNuvem() {
@@ -622,17 +583,22 @@
                         botaoRemover = `<button class="btn btn-outline-white btn-sm w-100 mt-2" onclick="removerAnuncio('${p.id}')"><i class="fa-solid fa-trash me-1"></i> Remover</button>`;
                     }
 
+                    let badgeEntrega = p.tipoEntrega === 'manual' 
+                        ? `<span class="badge bg-warning text-dark mb-2 align-self-start"><i class="fa-solid fa-hand me-1"></i> Entrega Manual</span>` 
+                        : `<span class="badge bg-info text-dark mb-2 align-self-start"><i class="fa-solid fa-bolt me-1"></i> Entrega Automática</span>`;
+
                     lista.innerHTML += `
                         <div class="col-md-3 col-sm-6">
                             <div class="game-card h-100 d-flex flex-column">
                                 <img src="${p.foto}" alt="${p.titulo}" onerror="this.src='https://images.unsplash.com/photo-1550745165-9bc0b252726f?w=500&auto=format&fit=crop&q=60'">
                                 <div class="p-3 d-flex flex-column flex-grow-1">
-                                    <span class="badge bg-dark border border-secondary mb-2 align-self-start text-muted">Vendedor: ${p.vendedor}</span>
+                                    <span class="badge bg-dark border border-secondary mb-1 align-self-start text-muted">Vendedor: ${p.vendedor}</span>
+                                    ${badgeEntrega}
                                     <h5 class="card-title fs-6 text-truncate">${p.titulo}</h5>
                                     <p class="small text-muted text-truncate mb-2">${p.descricao}</p>
                                     <div class="mt-auto">
                                         <div class="price mb-2">R$ ${Number(p.preco).toFixed(2)}</div>
-                                        <div class="small text-muted text-center py-1 border border-secondary rounded">Compre no PV e resgate por Key</div>
+                                        <div class="small text-muted text-center py-1 border border-secondary rounded">Compre e resgate por Key</div>
                                         ${botaoRemover}
                                     </div>
                                 </div>
@@ -661,6 +627,7 @@
 
             await db.collection("keys").doc(chaveUnica).set({
                 produtoTitulo: produto.titulo,
+                tipoEntrega: produto.tipoEntrega || 'auto',
                 conteudo: produto.conteudo,
                 usada: false
             });
@@ -668,7 +635,7 @@
             const listaKeys = document.getElementById('listaKeysGeradas');
             if(listaKeys.innerHTML.includes('Nenhuma key')) listaKeys.innerHTML = '';
             
-            listaKeys.innerHTML += `<div class="p-1 border-bottom border-secondary small text-white"><b>${chaveUnica}</b> — (${produto.titulo})</div>`;
+            listaKeys.innerHTML += `<div class="p-1 border-bottom border-secondary small text-white"><b>${chaveUnica}</b> — (${produto.titulo} | ${produto.tipoEntrega})</div>`;
             alert(`Key gerada na nuvem com sucesso: ${chaveUnica}`);
         }
 
@@ -689,48 +656,20 @@
             bootstrap.Modal.getInstance(document.getElementById('modalResgatar')).hide();
             document.getElementById('inputKeyResgate').value = '';
 
-            document.getElementById('textoProdutoResgatado').innerText = dadosKey.conteudo;
-            new bootstrap.Modal(document.getElementById('modalEntregaSucesso')).show();
-        }
+            const tituloModal = document.getElementById('tituloModalEntrega');
+            const descModal = document.getElementById('descricaoModalEntrega');
+            const textoProd = document.getElementById('textoProdutoResgatado');
 
-        // Lógica do Chat Automático com números (1, 2, 3)
-        function verificarEnterChat(e) {
-            if (e.key === 'Enter') {
-                enviarMensagemChat();
+            if (dadosKey.tipoEntrega === 'manual') {
+                tituloModal.innerHTML = `<i class="fa-solid fa-clock me-2"></i>Resgate Registrado (Entrega Manual)`;
+                descModal.innerText = `O vendedor foi avisado. Assim que você mandar mensagem ou o vendedor enviar o produto, ele será liberado automaticamente:`;
+            } else {
+                tituloModal.innerHTML = `<i class="fa-solid fa-check-circle me-2"></i>Resgate Realizado! (Automático)`;
+                descModal.innerText = `Aqui está o seu produto:`;
             }
-        }
 
-        function enviarMensagemChat() {
-            const input = document.getElementById('inputChatMsg');
-            const chatBox = document.getElementById('chatBoxAtendimento');
-            const texto = input.value.trim();
-
-            if (!texto) return;
-
-            // Mensagem do Usuário
-            chatBox.innerHTML += `<div class="msg-user">${escapeHtml(texto)}</div>`;
-            input.value = '';
-            chatBox.scrollTop = chatBox.scrollHeight;
-
-            // Resposta Automática do Bot Baseada no Número
-            setTimeout(() => {
-                let resposta = "Desculpe, não entendi. Digite <b>1</b>, <b>2</b> ou <b>3</b> para ver as opções.";
-                
-                if (texto === '1') {
-                    resposta = "🛍️ <b>Como comprar:</b> Escolha o produto na vitrine, chame o vendedor no PV para realizar o pagamento e você receberá uma <b>Key</b> exclusiva para resgatar o produto instantaneamente no site!";
-                } else if (texto === '2') {
-                    resposta = "💳 <b>Formas de pagamento:</b> Aceitamos Pix, transferência ou métodos combinados diretamente com os vendedores autorizados.";
-                } else if (texto === '3') {
-                    resposta = "🛠️ <b>Suporte:</b> Para falar com o Dono (Shorye) ou tirar dúvidas, entre em contato através das nossas redes sociais ou Discord oficial.";
-                }
-
-                chatBox.innerHTML += `<div class="msg-bot">${resposta}</div>`;
-                chatBox.scrollTop = chatBox.scrollHeight;
-            }, 400);
-        }
-
-        function escapeHtml(text) {
-            return text.replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;");
+            textoProd.innerText = dadosKey.conteudo;
+            new bootstrap.Modal(document.getElementById('modalEntregaSucesso')).show();
         }
     </script>
 </body>
