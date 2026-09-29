@@ -3,11 +3,15 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Shorye Vendas - Painel e Cargos</title>
+    <title>Shorye Vendas - Nuvem</title>
     <!-- Bootstrap CSS -->
     <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
     <!-- FontAwesome para Ícones -->
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <!-- Firebase SDKs -->
+    <script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-app-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-firestore-compat.js"></script>
+    
     <style>
         :root {
             --bg-dark: #000000;
@@ -140,19 +144,15 @@
         <div class="container">
             <a class="navbar-brand" href="#"><i class="fa-solid fa-store me-2"></i>SHORYE VENDAS</a>
             <div class="ms-auto d-flex align-items-center">
-                <!-- Botão Painel do Dono (Gerenciar Usuários e Senhas) -->
                 <button class="btn btn-white-custom btn-sm me-2" data-bs-toggle="modal" data-bs-target="#modalAdmin" id="btnAdminPanel" style="display:none;">
                     <i class="fa-solid fa-shield-halved me-1"></i> Painel ADM
                 </button>
-                <!-- Botão Gerador de Keys -->
                 <button class="btn btn-outline-white btn-sm me-2" data-bs-toggle="modal" data-bs-target="#modalGerador" id="btnGeradorKeys" style="display:none;">
                     <i class="fa-solid fa-key me-1"></i> Gerador de Keys
                 </button>
-                <!-- Botão Criar Anúncio (Apenas para quem tem cargo Vendedor) -->
                 <button class="btn btn-outline-white btn-sm me-2" data-bs-toggle="modal" data-bs-target="#modalAnuncio" id="btnNovoAnuncio" style="display:none;">
                     <i class="fa-solid fa-plus me-1"></i> Criar Anúncio
                 </button>
-                <!-- Botão Resgatar Key -->
                 <button class="btn btn-outline-white btn-sm me-2" data-bs-toggle="modal" data-bs-target="#modalResgatar" id="btnResgatar" style="display:none;">
                     <i class="fa-solid fa-gift me-1"></i> Resgatar Key
                 </button>
@@ -172,14 +172,14 @@
         </div>
 
         <div class="row g-4" id="listaProdutos">
-            <!-- Anúncios aparecem aqui -->
+            <!-- Anúncios carregados do Firebase -->
         </div>
     </main>
 
     <!-- Rodapé -->
     <footer>
         <div class="container text-center small">
-            &copy; 2026 Shorye Vendas. Todos os direitos reservados.
+            &copy; 2026 Shorye Vendas. Sincronizado na Nuvem.
         </div>
     </footer>
 
@@ -210,12 +210,12 @@
         </div>
     </div>
 
-    <!-- MODAL PAINEL DO DONO (GERENCIAR USUÁRIOS E SENHAS) -->
+    <!-- MODAL PAINEL DO DONO -->
     <div class="modal fade" id="modalAdmin" tabindex="-1">
         <div class="modal-dialog modal-lg modal-dialog-centered">
             <div class="modal-content p-4">
-                <h4 class="mb-3"><i class="fa-solid fa-users-gear me-2"></i>Painel de Administração (Usuários e Cargos)</h4>
-                <p class="small text-muted mb-3">Aqui você gerencia as contas criadas, visualiza senhas e define quem tem permissão para vender.</p>
+                <h4 class="mb-3"><i class="fa-solid fa-users-gear me-2"></i>Painel de Administração (Nuvem)</h4>
+                <p class="small text-muted mb-3">Gerencie usuários cadastrados e defina quem pode vender.</p>
                 
                 <div class="table-responsive">
                     <table class="table table-dark table-bordered align-middle text-center small">
@@ -223,12 +223,12 @@
                             <tr>
                                 <th>Usuário</th>
                                 <th>Senha</th>
-                                <th>Cargo Atual</th>
-                                <th>Ação (Mudar Cargo)</th>
+                                <th>Cargo</th>
+                                <th>Ação</th>
                             </tr>
                         </thead>
                         <tbody id="tabelaUsuariosAdmin">
-                            <!-- Preenchido via JS -->
+                            <!-- Preenchido via Firebase -->
                         </tbody>
                     </table>
                 </div>
@@ -277,12 +277,12 @@
                 <div class="mb-3">
                     <label class="form-label">Selecione o Produto:</label>
                     <select id="selectProdutoKey" class="form-select">
-                        <!-- Preenchido via JS -->
+                        <!-- Preenchido via Firebase -->
                     </select>
                 </div>
                 <button type="button" class="btn btn-white-custom w-100 mb-3" onclick="gerarKeyParaProduto()">Gerar Nova Key</button>
                 
-                <label class="form-label">Keys Geradas recentemente:</label>
+                <label class="form-label">Keys Geradas:</label>
                 <div class="chat-box" id="listaKeysGeradas" style="height: 130px;">
                     <span class="text-muted small">Nenhuma key gerada ainda.</span>
                 </div>
@@ -295,7 +295,7 @@
         <div class="modal-dialog modal-dialog-centered">
             <div class="modal-content p-4 text-center">
                 <h4 class="mb-3"><i class="fa-solid fa-gift me-2"></i>Resgatar sua Key</h4>
-                <p class="small text-muted mb-3">Cole abaixo a chave que você recebeu após o pagamento.</p>
+                <p class="small text-muted mb-3">Cole abaixo a chave que você recebeu.</p>
                 <div class="mb-3">
                     <input type="text" id="inputKeyResgate" class="form-control text-center text-uppercase" placeholder="EX: SHORYE-XXXX-XXXX">
                 </div>
@@ -318,26 +318,47 @@
         </div>
     </div>
 
-    <!-- Bootstrap JS e Lógica -->
+    <!-- Bootstrap JS e Lógica do Firebase -->
     <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
     <script>
+        // Suas credenciais reais do Firebase
+        const firebaseConfig = {
+            apiKey: "AIzaSyDXDJnnLyfe2WYQIiMAJ5mIV-4-e4xmMWY",
+            authDomain: "shorye-vendas.firebaseapp.com",
+            projectId: "shorye-vendas",
+            storageBucket: "shorye-vendas.firebasestorage.app",
+            messagingSenderId: "390510373291",
+            appId: "1:390510373291:web:a866b7b12ab2e7614a0aee",
+            measurementId: "G-NBX6D6XMY2"
+        };
+
+        let db;
+        try {
+            firebase.initializeApp(firebaseConfig);
+            db = firebase.firestore();
+        } catch(e) {
+            console.warn("Erro ao iniciar Firebase:", e);
+        }
+
         let usuarioAtual = localStorage.getItem('shorye_user') || null;
         let modoCadastro = false;
 
         document.addEventListener("DOMContentLoaded", () => {
-            inicializarBancoUsuarios();
-            atualizarInterfaceUsuario();
-            carregarProdutos();
+            garantirContaDono();
+            escutarDadosNuvem();
         });
 
-        // Inicializar banco padrão de usuários se não existir
-        function inicializarBancoUsuarios() {
-            let usuarios = JSON.parse(localStorage.getItem('shorye_users')) || {};
-            // Garante que a conta 'Shorye' exista e seja sempre o dono com cargo admin/vendedor
-            if(!usuarios['Shorye']) {
-                usuarios['Shorye'] = { senha: '123', cargo: 'vendedor' };
+        async function garantirContaDono() {
+            if(!db) return;
+            try {
+                let docRef = db.collection("usuarios").doc("Shorye");
+                let doc = await docRef.get();
+                if(!doc.exists) {
+                    await docRef.set({ senha: "123", cargo: "vendedor" });
+                }
+            } catch(err) {
+                console.log("Erro ao conectar ao banco:", err);
             }
-            localStorage.setItem('shorye_users', JSON.stringify(usuarios));
         }
 
         function alternarTelaAuth(e) {
@@ -358,45 +379,57 @@
             }
         }
 
-        function executarAutenticacao() {
+        async function executarAutenticacao() {
             const usuarioInput = document.getElementById('authUsuario').value.trim();
             const senhaInput = document.getElementById('authSenha').value.trim();
 
             if(!usuarioInput || !senhaInput) return alert('Preencha usuário e senha!');
 
-            let usuarios = JSON.parse(localStorage.getItem('shorye_users')) || {};
+            if(!db) {
+                return alert('Erro de conexão com o banco de dados do Firebase.');
+            }
 
-            if(modoCadastro) {
-                // Verificar se o usuário já existe (case insensitive)
-                let existe = Object.keys(usuarios).some(u => u.toLowerCase() === usuarioInput.toLowerCase());
-                if(existe) {
-                    return alert('Este nome de usuário já está em uso! Escolha outro.');
+            try {
+                let snapshot = await db.collection("usuarios").get();
+                let usuarioEncontradoKey = null;
+                let dadosUsuario = null;
+
+                snapshot.forEach(doc => {
+                    if(doc.id.toLowerCase() === usuarioInput.toLowerCase()) {
+                        usuarioEncontradoKey = doc.id;
+                        dadosUsuario = doc.data();
+                    }
+                });
+
+                if(modoCadastro) {
+                    if(usuarioEncontradoKey) {
+                        return alert('Este nome de usuário já está em uso! Escolha outro.');
+                    }
+                    await db.collection("usuarios").doc(usuarioInput).set({
+                        senha: senhaInput,
+                        cargo: 'cliente'
+                    });
+                    alert('Conta criada com sucesso! Faça login.');
+                    alternarTelaAuth(new Event('click'));
+                } else {
+                    if(!usuarioEncontradoKey || dadosUsuario.senha !== senhaInput) {
+                        return alert('Usuário ou senha incorretos!');
+                    }
+
+                    localStorage.setItem('shorye_user', usuarioEncontradoKey);
+                    usuarioAtual = usuarioEncontradoKey;
+
+                    bootstrap.Modal.getInstance(document.getElementById('modalAuth')).hide();
+                    document.getElementById('authUsuario').value = '';
+                    document.getElementById('authSenha').value = '';
+                    atualizarInterfaceUsuario();
                 }
-
-                // Cadastrar novo usuário com cargo padrão 'cliente'
-                usuarios[usuarioInput] = { senha: senhaInput, cargo: 'cliente' };
-                localStorage.setItem('shorye_users', JSON.stringify(usuarios));
-                alert('Conta criada com sucesso! Faça login.');
-                alternarTelaAuth(new Event('click'));
-            } else {
-                // Logar
-                let usuarioEncontrado = Object.keys(usuarios).find(u => u.toLowerCase() === usuarioInput.toLowerCase());
-                
-                if(!usuarioEncontrado || usuarios[usuarioEncontrado].senha !== senhaInput) {
-                    return alert('Usuário ou senha incorretos!');
-                }
-
-                localStorage.setItem('shorye_user', usuarioEncontrado);
-                usuarioAtual = usuarioEncontrado;
-
-                bootstrap.Modal.getInstance(document.getElementById('modalAuth')).hide();
-                document.getElementById('authUsuario').value = '';
-                document.getElementById('authSenha').value = '';
-                atualizarInterfaceUsuario();
+            } catch(err) {
+                alert('Erro ao autenticar: ' + err.message);
             }
         }
 
-        function atualizarInterfaceUsuario() {
+        async function atualizarInterfaceUsuario() {
             const userInfo = document.getElementById('userInfo');
             const btnLogin = document.getElementById('btnLoginModal');
             const btnNovo = document.getElementById('btnNovoAnuncio');
@@ -404,16 +437,29 @@
             const btnGerador = document.getElementById('btnGeradorKeys');
             const btnAdmin = document.getElementById('btnAdminPanel');
 
-            let usuarios = JSON.parse(localStorage.getItem('shorye_users')) || {};
+            if(!usuarioAtual || !db) {
+                userInfo.innerHTML = '';
+                btnLogin.style.display = 'block';
+                btnNovo.style.display = 'none';
+                btnResgatar.style.display = 'none';
+                btnGerador.style.display = 'none';
+                btnAdmin.style.display = 'none';
+                return;
+            }
 
-            if(usuarioAtual && usuarios[usuarioAtual]) {
-                let dadosUser = usuarios[usuarioAtual];
+            try {
+                let doc = await db.collection("usuarios").doc(usuarioAtual).get();
+                if(!doc.exists) {
+                    sair();
+                    return;
+                }
+                let dadosUser = doc.data();
+
                 userInfo.innerHTML = `<i class="fa-solid fa-user me-1"></i> ${usuarioAtual} (<span class="text-warning">${dadosUser.cargo}</span>) - <a href="#" onclick="sair()" class="text-muted small text-decoration-none">Sair</a>`;
                 
                 btnLogin.style.display = 'none';
                 btnResgatar.style.display = 'block';
 
-                // Apenas o dono 'Shorye' vê o painel ADM e o gerador de keys
                 if(usuarioAtual.toLowerCase() === 'shorye') {
                     btnAdmin.style.display = 'block';
                     btnGerador.style.display = 'block';
@@ -422,86 +468,80 @@
                     btnGerador.style.display = 'none';
                 }
 
-                // Apenas quem tem cargo de 'vendedor' pode criar anúncios
                 if(dadosUser.cargo === 'vendedor') {
                     btnNovo.style.display = 'block';
                 } else {
                     btnNovo.style.display = 'none';
                 }
-
-            } else {
-                userInfo.innerHTML = '';
-                btnLogin.style.display = 'block';
-                btnNovo.style.display = 'none';
-                btnResgatar.style.display = 'none';
-                btnGerador.style.display = 'none';
-                btnAdmin.style.display = 'none';
+                
+                carregarTabelaAdmin();
+            } catch(e) {
+                console.log(e);
             }
-
-            carregarProdutos();
-            atualizarSelectProdutos();
-            carregarTabelaAdmin();
         }
 
         function sair() {
             localStorage.removeItem('shorye_user');
             usuarioAtual = null;
             atualizarInterfaceUsuario();
+            location.reload();
         }
 
-        // Popular a tabela do Painel ADM com usuários e senhas
-        function carregarTabelaAdmin() {
+        async function carregarTabelaAdmin() {
             const tbody = document.getElementById('tabelaUsuariosAdmin');
-            if(!tbody) return;
+            if(!tbody || !db) return;
 
-            let usuarios = JSON.parse(localStorage.getItem('shorye_users')) || {};
-            tbody.innerHTML = '';
+            try {
+                let snapshot = await db.collection("usuarios").get();
+                tbody.innerHTML = '';
 
-            for(let user in usuarios) {
-                let dados = usuarios[user];
-                let btnMudarCargo = '';
-                
-                if(user.toLowerCase() !== 'shorye') {
-                    let novoCargoDestino = dados.cargo === 'vendedor' ? 'cliente' : 'vendedor';
-                    let textoBotao = dados.cargo === 'vendedor' ? 'Remover Vendedor' : 'Tornar Vendedor';
-                    let corBotao = dados.cargo === 'vendedor' ? 'btn-outline-danger' : 'btn-outline-success';
+                snapshot.forEach(doc => {
+                    let user = doc.id;
+                    let dados = doc.data();
+                    let btnMudarCargo = '';
                     
-                    btnMudarCargo = `<button class="btn ${corBotao} btn-sm" onclick="mudarCargo('${user}', '${novoCargoDestino}')">${textoBotao}</button>`;
-                } else {
-                    btnMudarCargo = `<span class="badge bg-secondary">Dono Supremo</span>`;
-                }
+                    if(user.toLowerCase() !== 'shorye') {
+                        let novoCargoDestino = dados.cargo === 'vendedor' ? 'cliente' : 'vendedor';
+                        let textoBotao = dados.cargo === 'vendedor' ? 'Remover Vendedor' : 'Tornar Vendedor';
+                        let corBotao = dados.cargo === 'vendedor' ? 'btn-outline-danger' : 'btn-outline-success';
+                        
+                        btnMudarCargo = `<button class="btn ${corBotao} btn-sm" onclick="mudarCargo('${user}', '${novoCargoDestino}')">${textoBotao}</button>`;
+                    } else {
+                        btnMudarCargo = `<span class="badge bg-secondary">Dono Supremo</span>`;
+                    }
 
-                tbody.innerHTML += `
-                    <tr>
-                        <td><b>${user}</b></td>
-                        <td><code>${dados.senha}</code></td>
-                        <td><span class="badge ${dados.cargo === 'vendedor' ? 'bg-success' : 'bg-secondary'}">${dados.cargo}</span></td>
-                        <td>${btnMudarCargo}</td>
-                    </tr>
-                `;
+                    tbody.innerHTML += `
+                        <tr>
+                            <td><b>${user}</b></td>
+                            <td><code>${dados.senha}</code></td>
+                            <td><span class="badge ${dados.cargo === 'vendedor' ? 'bg-success' : 'bg-secondary'}">${dados.cargo}</span></td>
+                            <td>${btnMudarCargo}</td>
+                        </tr>
+                    `;
+                });
+            } catch(e) {
+                console.log(e);
             }
         }
 
-        function mudarCargo(user, novoCargo) {
-            let usuarios = JSON.parse(localStorage.getItem('shorye_users')) || {};
-            if(usuarios[user]) {
-                usuarios[user].cargo = novoCargo;
-                localStorage.setItem('shorye_users', JSON.stringify(usuarios));
-                carregarTabelaAdmin();
-                atualizarInterfaceUsuario();
-            }
+        async function mudarCargo(user, novoCargo) {
+            if(!db) return;
+            await db.collection("usuarios").doc(user).update({ cargo: novoCargo });
+            carregarTabelaAdmin();
+            atualizarInterfaceUsuario();
         }
 
-        // Criar Anúncio (Validando se tem cargo de vendedor)
-        document.getElementById('formAnuncio').addEventListener('submit', (e) => {
+        document.getElementById('formAnuncio').addEventListener('submit', async (e) => {
             e.preventDefault();
-            let usuarios = JSON.parse(localStorage.getItem('shorye_users')) || {};
-            if(!usuarioAtual || usuarios[usuarioAtual].cargo !== 'vendedor') {
+            if(!db || !usuarioAtual) return;
+
+            let userDoc = await db.collection("usuarios").doc(usuarioAtual).get();
+            if(!userDoc.exists || userDoc.data().cargo !== 'vendedor') {
                 return alert('Você não tem permissão de vendedor para anunciar!');
             }
 
             const novoAnuncio = {
-                id: Date.now(),
+                id: Date.now().toString(),
                 vendedor: usuarioAtual,
                 titulo: document.getElementById('tituloProd').value,
                 preco: document.getElementById('precoProd').value,
@@ -510,114 +550,111 @@
                 conteudo: document.getElementById('conteudoEntrega').value
             };
 
-            let produtos = JSON.parse(localStorage.getItem('shorye_produtos')) || [];
-            produtos.push(novoAnuncio);
-            localStorage.setItem('shorye_produtos', JSON.stringify(produtos));
+            await db.collection("produtos").doc(novoAnuncio.id).set(novoAnuncio);
 
             document.getElementById('formAnuncio').reset();
             bootstrap.Modal.getInstance(document.getElementById('modalAnuncio')).hide();
-            carregarProdutos();
-            atualizarSelectProdutos();
-            alert('Anúncio criado com sucesso!');
+            alert('Anúncio criado e sincronizado na nuvem!');
         });
 
-        function carregarProdutos() {
-            const lista = document.getElementById('listaProdutos');
-            let produtos = JSON.parse(localStorage.getItem('shorye_produtos')) || [];
+        function escutarDadosNuvem() {
+            if(!db) return;
+            atualizarInterfaceUsuario();
 
-            if(produtos.length === 0) {
-                lista.innerHTML = `<div class="text-center text-muted py-5">Nenhum anúncio disponível no momento.</div>`;
-                return;
-            }
+            db.collection("produtos").onSnapshot(snapshot => {
+                const lista = document.getElementById('listaProdutos');
+                const select = document.getElementById('selectProdutoKey');
+                if(!lista) return;
 
-            lista.innerHTML = '';
-            produtos.forEach(p => {
-                let botaoRemover = '';
-                if(usuarioAtual && (usuarioAtual === p.vendedor || usuarioAtual.toLowerCase() === 'shorye')) {
-                    botaoRemover = `<button class="btn btn-outline-white btn-sm w-100 mt-2" onclick="removerAnuncio(${p.id})"><i class="fa-solid fa-trash me-1"></i> Remover</button>`;
+                if(snapshot.empty) {
+                    lista.innerHTML = `<div class="text-center text-muted py-5">Nenhum anúncio disponível no momento.</div>`;
+                    if(select) select.innerHTML = '';
+                    return;
                 }
 
-                lista.innerHTML += `
-                    <div class="col-md-3 col-sm-6">
-                        <div class="game-card h-100 d-flex flex-column">
-                            <img src="${p.foto}" alt="${p.titulo}" onerror="this.src='https://images.unsplash.com/photo-1550745165-9bc0b252726f?w=500&auto=format&fit=crop&q=60'">
-                            <div class="p-3 d-flex flex-column flex-grow-1">
-                                <span class="badge bg-dark border border-secondary mb-2 align-self-start text-muted">Vendedor: ${p.vendedor}</span>
-                                <h5 class="card-title fs-6 text-truncate">${p.titulo}</h5>
-                                <p class="small text-muted text-truncate mb-2">${p.descricao}</p>
-                                <div class="mt-auto">
-                                    <div class="price mb-2">R$ ${Number(p.preco).toFixed(2)}</div>
-                                    <div class="small text-muted text-center py-1 border border-secondary rounded">Compre no PV e resgate por Key</div>
-                                    ${botaoRemover}
+                lista.innerHTML = '';
+                if(select) select.innerHTML = '';
+
+                snapshot.forEach(doc => {
+                    let p = doc.data();
+                    
+                    if(select) {
+                        select.innerHTML += `<option value="${p.id}">${p.titulo} (R$ ${p.preco})</option>`;
+                    }
+
+                    let botaoRemover = '';
+                    if(usuarioAtual && (usuarioAtual === p.vendedor || usuarioAtual.toLowerCase() === 'shorye')) {
+                        botaoRemover = `<button class="btn btn-outline-white btn-sm w-100 mt-2" onclick="removerAnuncio('${p.id}')"><i class="fa-solid fa-trash me-1"></i> Remover</button>`;
+                    }
+
+                    lista.innerHTML += `
+                        <div class="col-md-3 col-sm-6">
+                            <div class="game-card h-100 d-flex flex-column">
+                                <img src="${p.foto}" alt="${p.titulo}" onerror="this.src='https://images.unsplash.com/photo-1550745165-9bc0b252726f?w=500&auto=format&fit=crop&q=60'">
+                                <div class="p-3 d-flex flex-column flex-grow-1">
+                                    <span class="badge bg-dark border border-secondary mb-2 align-self-start text-muted">Vendedor: ${p.vendedor}</span>
+                                    <h5 class="card-title fs-6 text-truncate">${p.titulo}</h5>
+                                    <p class="small text-muted text-truncate mb-2">${p.descricao}</p>
+                                    <div class="mt-auto">
+                                        <div class="price mb-2">R$ ${Number(p.preco).toFixed(2)}</div>
+                                        <div class="small text-muted text-center py-1 border border-secondary rounded">Compre no PV e resgate por Key</div>
+                                        ${botaoRemover}
+                                    </div>
                                 </div>
                             </div>
                         </div>
-                    </div>
-                `;
+                    `;
+                });
             });
         }
 
-        function removerAnuncio(id) {
-            if(!confirm('Deseja remover este anúncio?')) return;
-            let produtos = JSON.parse(localStorage.getItem('shorye_produtos')) || [];
-            produtos = produtos.filter(p => p.id !== id);
-            localStorage.setItem('shorye_produtos', JSON.stringify(produtos));
-            carregarProdutos();
-            atualizarSelectProdutos();
+        async function removerAnuncio(id) {
+            if(!confirm('Deseja remover este anúncio?') || !db) return;
+            await db.collection("produtos").doc(id).delete();
         }
 
-        function atualizarSelectProdutos() {
-            let produtos = JSON.parse(localStorage.getItem('shorye_produtos')) || [];
-            const select = document.getElementById('selectProdutoKey');
-            if(!select) return;
-            select.innerHTML = '';
-            produtos.forEach(p => {
-                select.innerHTML += `<option value="${p.id}">${p.titulo} (R$ ${p.preco})</option>`;
-            });
-        }
-
-        function gerarKeyParaProduto() {
+        async function gerarKeyParaProduto() {
             const produtoId = document.getElementById('selectProdutoKey').value;
-            if(!produtoId) return alert('Nenhum produto selecionado!');
+            if(!produtoId || !db) return alert('Nenhum produto selecionado!');
 
-            let produtos = JSON.parse(localStorage.getItem('shorye_produtos')) || [];
-            const produto = produtos.find(p => p.id == produtoId);
-            if(!produto) return;
+            let docProd = await db.collection("produtos").doc(produtoId).get();
+            if(!docProd.exists) return;
+            const produto = docProd.data();
 
             const randomCode = Math.random().toString(36).substring(2, 6).toUpperCase() + '-' + Math.random().toString(36).substring(2, 6).toUpperCase();
             const chaveUnica = `SHORYE-${randomCode}`;
 
-            let keysSalvas = JSON.parse(localStorage.getItem('shorye_keys')) || {};
-            keysSalvas[chaveUnica] = {
+            await db.collection("keys").doc(chaveUnica).set({
                 produtoTitulo: produto.titulo,
                 conteudo: produto.conteudo,
                 usada: false
-            };
-            localStorage.setItem('shorye_keys', JSON.stringify(keysSalvas));
+            });
 
             const listaKeys = document.getElementById('listaKeysGeradas');
             if(listaKeys.innerHTML.includes('Nenhuma key')) listaKeys.innerHTML = '';
             
             listaKeys.innerHTML += `<div class="p-1 border-bottom border-secondary small text-white"><b>${chaveUnica}</b> — (${produto.titulo})</div>`;
-            alert(`Key gerada com sucesso: ${chaveUnica}`);
+            alert(`Key gerada na nuvem com sucesso: ${chaveUnica}`);
         }
 
-        function resgatarKey() {
+        async function resgatarKey() {
             const keyInput = document.getElementById('inputKeyResgate').value.trim().toUpperCase();
-            if(!keyInput) return alert('Digite a key!');
+            if(!keyInput || !db) return alert('Digite a key!');
 
-            let keysSalvas = JSON.parse(localStorage.getItem('shorye_keys')) || {};
+            let keyRef = db.collection("keys").doc(keyInput);
+            let keyDoc = await keyRef.get();
 
-            if(!keysSalvas[keyInput]) return alert('Key inválida!');
-            if(keysSalvas[keyInput].usada) return alert('Esta key já foi usada!');
+            if(!keyDoc.exists) return alert('Key inválida!');
+            let dadosKey = keyDoc.data();
 
-            keysSalvas[keyInput].usada = true;
-            localStorage.setItem('shorye_keys', JSON.stringify(keysSalvas));
+            if(dadosKey.usada) return alert('Esta key já foi usada!');
+
+            await keyRef.update({ usada: true });
 
             bootstrap.Modal.getInstance(document.getElementById('modalResgatar')).hide();
             document.getElementById('inputKeyResgate').value = '';
 
-            document.getElementById('textoProdutoResgatado').innerText = keysSalvas[keyInput].conteudo;
+            document.getElementById('textoProdutoResgatado').innerText = dadosKey.conteudo;
             new bootstrap.Modal(document.getElementById('modalEntregaSucesso')).show();
         }
     </script>
