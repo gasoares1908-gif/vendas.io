@@ -248,18 +248,25 @@
                         <textarea id="descProd" class="form-control" rows="2" placeholder="Detalhes..."></textarea>
                     </div>
 
-                    <!-- NOVO: Tipo de Entrega e Configuração da Mensagem -->
+                    <!-- Tipo de Entrega -->
                     <div class="mb-2">
                         <label class="form-label text-warning"><i class="fa-solid fa-truck-fast me-1"></i> Tipo de Entrega</label>
-                        <select id="tipoEntrega" class="form-select">
-                            <option value="auto">1. Automática (O sistema envia direto ao resgatar)</option>
-                            <option value="manual">2. Manual (Espera você mandar a mensagem primeiro)</option>
+                        <select id="tipoEntrega" class="form-select" onchange="alternarCamposEntrega()">
+                            <option value="auto">1. Automática (O bot envia direto ao resgatar)</option>
+                            <option value="manual">2. Manual com Interação (Pede algo ao comprador primeiro, depois envia)</option>
                         </select>
                     </div>
 
+                    <!-- Campo exclusivo para o Modo Manual (O que o bot vai PEDIR pro cliente mandar) -->
+                    <div class="mb-2" id="blocoMensagemPedido" style="display: none;">
+                        <label class="form-label text-info"><i class="fa-solid fa-comment-dots me-1"></i> O que o bot deve pedir para o comprador enviar?</label>
+                        <input type="text" id="mensagemPedido" class="form-control" placeholder="Ex: Digite seu nick do jogo para receber o item...">
+                    </div>
+
+                    <!-- O que o bot vai ENTREGAR no final -->
                     <div class="mb-3">
-                        <label class="form-label text-warning"><i class="fa-solid fa-message me-1"></i> Configurar o que o bot vai enviar:</label>
-                        <textarea id="conteudoEntrega" class="form-control" rows="3" placeholder="Ex: Login: user | Senha: 123 (Conteúdo que será entregue ao comprador)" required></textarea>
+                        <label class="form-label text-warning"><i class="fa-solid fa-box-archive me-1"></i> O que o bot vai enviar de produto:</label>
+                        <textarea id="conteudoEntrega" class="form-control" rows="3" placeholder="Ex: Login: user | Senha: 123" required></textarea>
                     </div>
 
                     <button type="submit" class="btn btn-white-custom w-100">Publicar Anúncio</button>
@@ -298,7 +305,21 @@
                 <div class="mb-3">
                     <input type="text" id="inputKeyResgate" class="form-control text-center text-uppercase" placeholder="EX: SHORYE-XXXX-XXXX">
                 </div>
-                <button type="button" class="btn btn-white-custom w-100 mb-3" onclick="resgatarKey()">Resgatar Produto</button>
+                <button type="button" class="btn btn-white-custom w-100 mb-3" onclick="verificarResgateKey()">Continuar Resgate</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- MODAL DE INTERAÇÃO MANUAL (Caso o modo seja 2) -->
+    <div class="modal fade" id="modalInteracaoManual" tabindex="-1" data-bs-backdrop="static">
+        <div class="modal-dialog modal-dialog-centered">
+            <div class="modal-content p-4">
+                <h4 class="mb-3 text-warning"><i class="fa-solid fa-comments me-2"></i>Ação Necessária</h4>
+                <p class="small text-muted mb-2" id="textoPedidoBot">O bot está pedindo:</p>
+                <div class="mb-3">
+                    <input type="text" id="respostaClienteInput" class="form-control" placeholder="Digite sua resposta aqui...">
+                </div>
+                <button type="button" class="btn btn-white-custom w-100" onclick="concluirResgateManual()">Enviar e Receber Produto</button>
             </div>
         </div>
     </div>
@@ -307,8 +328,8 @@
     <div class="modal fade" id="modalEntregaSucesso" tabindex="-1" data-bs-backdrop="static">
         <div class="modal-dialog modal-dialog-centered">
             <div class="modal-content p-4">
-                <h4 class="mb-3 text-success" id="tituloModalEntrega"><i class="fa-solid fa-check-circle me-2"></i>Resgate Realizado!</h4>
-                <p class="small text-muted mb-2" id="descricaoModalEntrega">Aqui está o seu produto:</p>
+                <h4 class="mb-3 text-success"><i class="fa-solid fa-check-circle me-2"></i>Resgate Realizado!</h4>
+                <p class="small text-muted mb-2">Aqui está o seu produto:</p>
                 <div class="p-3 bg-black border border-secondary rounded mb-3">
                     <p class="mb-0 text-white" id="textoProdutoResgatado" style="white-space: pre-wrap;"></p>
                 </div>
@@ -340,6 +361,7 @@
 
         let usuarioAtual = localStorage.getItem('shorye_user') || null;
         let modoCadastro = false;
+        let keyEmProgresso = null;
 
         document.addEventListener("DOMContentLoaded", () => {
             garantirContaDono();
@@ -356,6 +378,16 @@
                 }
             } catch(err) {
                 console.log("Erro ao conectar ao banco:", err);
+            }
+        }
+
+        function alternarCamposEntrega() {
+            const tipo = document.getElementById('tipoEntrega').value;
+            const bloco = document.getElementById('blocoMensagemPedido');
+            if(tipo === 'manual') {
+                bloco.style.display = 'block';
+            } else {
+                bloco.style.display = 'none';
             }
         }
 
@@ -535,6 +567,9 @@
                 return alert('Você não tem permissão de vendedor para anunciar!');
             }
 
+            const tipoEntrega = document.getElementById('tipoEntrega').value;
+            const mensagemPedido = tipoEntrega === 'manual' ? document.getElementById('mensagemPedido').value : '';
+
             const novoAnuncio = {
                 id: Date.now().toString(),
                 vendedor: usuarioAtual,
@@ -542,15 +577,17 @@
                 preco: document.getElementById('precoProd').value,
                 foto: document.getElementById('fotoProd').value,
                 descricao: document.getElementById('descProd').value,
-                tipoEntrega: document.getElementById('tipoEntrega').value,
+                tipoEntrega: tipoEntrega,
+                mensagemPedido: mensagemPedido,
                 conteudo: document.getElementById('conteudoEntrega').value
             };
 
             await db.collection("produtos").doc(novoAnuncio.id).set(novoAnuncio);
 
             document.getElementById('formAnuncio').reset();
+            document.getElementById('blocoMensagemPedido').style.display = 'none';
             bootstrap.Modal.getInstance(document.getElementById('modalAnuncio')).hide();
-            alert('Anúncio criado com sucesso com as configurações de entrega!');
+            alert('Anúncio criado com sucesso!');
         });
 
         function escutarDadosNuvem() {
@@ -584,8 +621,8 @@
                     }
 
                     let badgeEntrega = p.tipoEntrega === 'manual' 
-                        ? `<span class="badge bg-warning text-dark mb-2 align-self-start"><i class="fa-solid fa-hand me-1"></i> Entrega Manual</span>` 
-                        : `<span class="badge bg-info text-dark mb-2 align-self-start"><i class="fa-solid fa-bolt me-1"></i> Entrega Automática</span>`;
+                        ? `<span class="badge bg-warning text-dark mb-2 align-self-start"><i class="fa-solid fa-hand me-1"></i> Manual c/ Interação</span>` 
+                        : `<span class="badge bg-info text-dark mb-2 align-self-start"><i class="fa-solid fa-bolt me-1"></i> Automática</span>`;
 
                     lista.innerHTML += `
                         <div class="col-md-3 col-sm-6">
@@ -628,6 +665,7 @@
             await db.collection("keys").doc(chaveUnica).set({
                 produtoTitulo: produto.titulo,
                 tipoEntrega: produto.tipoEntrega || 'auto',
+                mensagemPedido: produto.mensagemPedido || '',
                 conteudo: produto.conteudo,
                 usada: false
             });
@@ -635,11 +673,11 @@
             const listaKeys = document.getElementById('listaKeysGeradas');
             if(listaKeys.innerHTML.includes('Nenhuma key')) listaKeys.innerHTML = '';
             
-            listaKeys.innerHTML += `<div class="p-1 border-bottom border-secondary small text-white"><b>${chaveUnica}</b> — (${produto.titulo} | ${produto.tipoEntrega})</div>`;
-            alert(`Key gerada na nuvem com sucesso: ${chaveUnica}`);
+            listaKeys.innerHTML += `<div class="p-1 border-bottom border-secondary small text-white"><b>${chaveUnica}</b> — (${produto.titulo})</div>`;
+            alert(`Key gerada com sucesso: ${chaveUnica}`);
         }
 
-        async function resgatarKey() {
+        async function verificarResgateKey() {
             const keyInput = document.getElementById('inputKeyResgate').value.trim().toUpperCase();
             if(!keyInput || !db) return alert('Digite a key!');
 
@@ -651,25 +689,38 @@
 
             if(dadosKey.usada) return alert('Esta key já foi usada!');
 
-            await keyRef.update({ usada: true });
+            keyEmProgresso = { id: keyInput, ...dadosKey };
 
             bootstrap.Modal.getInstance(document.getElementById('modalResgatar')).hide();
             document.getElementById('inputKeyResgate').value = '';
 
-            const tituloModal = document.getElementById('tituloModalEntrega');
-            const descModal = document.getElementById('descricaoModalEntrega');
-            const textoProd = document.getElementById('textoProdutoResgatado');
-
-            if (dadosKey.tipoEntrega === 'manual') {
-                tituloModal.innerHTML = `<i class="fa-solid fa-clock me-2"></i>Resgate Registrado (Entrega Manual)`;
-                descModal.innerText = `O vendedor foi avisado. Assim que você mandar mensagem ou o vendedor enviar o produto, ele será liberado automaticamente:`;
+            if(dadosKey.tipoEntrega === 'manual') {
+                // Abre o modal pedindo a interação do cliente antes de dar o produto
+                document.getElementById('textoPedidoBot').innerText = dadosKey.mensagemPedido || "O bot está pedindo uma resposta para continuar:";
+                document.getElementById('respostaClienteInput').value = '';
+                new bootstrap.Modal(document.getElementById('modalInteracaoManual')).show();
             } else {
-                tituloModal.innerHTML = `<i class="fa-solid fa-check-circle me-2"></i>Resgate Realizado! (Automático)`;
-                descModal.innerText = `Aqui está o seu produto:`;
+                // Modo automático: entrega direto
+                await keyRef.update({ usada: true });
+                document.getElementById('textoProdutoResgatado').innerText = dadosKey.conteudo;
+                new bootstrap.Modal(document.getElementById('modalEntregaSucesso')).show();
             }
+        }
 
-            textoProd.innerText = dadosKey.conteudo;
+        async function concluirResgateManual() {
+            const resposta = document.getElementById('respostaClienteInput').value.trim();
+            if(!resposta) return alert('Você precisa digitar a resposta solicitada pelo bot!');
+
+            if(!db || !keyEmProgresso) return;
+
+            // Marca a key como usada após o cliente interagir e mandar o que foi pedido
+            await db.collection("keys").doc(keyEmProgresso.id).update({ usada: true });
+
+            bootstrap.Modal.getInstance(document.getElementById('modalInteracaoManual')).hide();
+
+            document.getElementById('textoProdutoResgatado').innerText = keyEmProgresso.conteudo;
             new bootstrap.Modal(document.getElementById('modalEntregaSucesso')).show();
+            keyEmProgresso = null;
         }
     </script>
 </body>
