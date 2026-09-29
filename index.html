@@ -1,0 +1,625 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Shorye Vendas - Painel e Cargos</title>
+    <!-- Bootstrap CSS -->
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+    <!-- FontAwesome para Ícones -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <style>
+        :root {
+            --bg-dark: #000000;
+            --bg-card: #121212;
+            --border-color: #333333;
+            --text-color: #ffffff;
+            --text-muted: #a1a1a1;
+        }
+
+        body {
+            background-color: var(--bg-dark);
+            color: var(--text-color);
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+        }
+
+        .navbar {
+            background-color: #000000;
+            border-bottom: 1px solid var(--border-color);
+        }
+
+        .navbar-brand {
+            font-weight: 700;
+            color: #ffffff !important;
+            letter-spacing: 1px;
+        }
+
+        .game-card {
+            background-color: var(--bg-card);
+            border: 1px solid var(--border-color);
+            border-radius: 8px;
+            overflow: hidden;
+            transition: transform 0.2s ease, border-color 0.2s ease;
+        }
+
+        .game-card:hover {
+            transform: translateY(-4px);
+            border-color: #ffffff;
+        }
+
+        .game-card img {
+            height: 160px;
+            object-fit: cover;
+            width: 100%;
+            border-bottom: 1px solid var(--border-color);
+        }
+
+        .price {
+            color: #ffffff;
+            font-weight: bold;
+            font-size: 1.25rem;
+        }
+
+        .btn-white-custom {
+            background-color: #ffffff;
+            border: 1px solid #ffffff;
+            color: #000000;
+            font-weight: 600;
+            transition: 0.2s;
+        }
+
+        .btn-white-custom:hover {
+            background-color: #d4d4d4;
+            border-color: #d4d4d4;
+            color: #000000;
+        }
+
+        .btn-outline-white {
+            color: #ffffff;
+            border-color: #ffffff;
+        }
+
+        .btn-outline-white:hover {
+            background-color: #ffffff;
+            color: #000000;
+        }
+
+        .modal-content {
+            background-color: var(--bg-card);
+            color: var(--text-color);
+            border: 1px solid var(--border-color);
+        }
+
+        .form-control, .form-select {
+            background-color: #000000;
+            border: 1px solid var(--border-color);
+            color: white;
+        }
+
+        .form-control:focus, .form-select:focus {
+            background-color: #000000;
+            border-color: #ffffff;
+            color: white;
+            box-shadow: 0 0 0 0.25rem rgba(255, 255, 255, 0.15);
+        }
+
+        .chat-box {
+            background-color: #000000;
+            border: 1px solid var(--border-color);
+            border-radius: 6px;
+            height: 200px;
+            overflow-y: auto;
+            padding: 15px;
+            display: flex;
+            flex-direction: column;
+            gap: 10px;
+        }
+
+        .msg-bot {
+            background-color: #1a1a1a;
+            border: 1px solid var(--border-color);
+            padding: 10px;
+            border-radius: 6px;
+            align-self: flex-start;
+            max-width: 85%;
+        }
+
+        footer {
+            background-color: #000000;
+            border-top: 1px solid var(--border-color);
+            color: var(--text-muted);
+            padding: 2rem 0;
+            margin-top: 4rem;
+        }
+    </style>
+</head>
+<body>
+
+    <!-- Navbar -->
+    <nav class="navbar navbar-expand-lg navbar-dark sticky-top">
+        <div class="container">
+            <a class="navbar-brand" href="#"><i class="fa-solid fa-store me-2"></i>SHORYE VENDAS</a>
+            <div class="ms-auto d-flex align-items-center">
+                <!-- Botão Painel do Dono (Gerenciar Usuários e Senhas) -->
+                <button class="btn btn-white-custom btn-sm me-2" data-bs-toggle="modal" data-bs-target="#modalAdmin" id="btnAdminPanel" style="display:none;">
+                    <i class="fa-solid fa-shield-halved me-1"></i> Painel ADM
+                </button>
+                <!-- Botão Gerador de Keys -->
+                <button class="btn btn-outline-white btn-sm me-2" data-bs-toggle="modal" data-bs-target="#modalGerador" id="btnGeradorKeys" style="display:none;">
+                    <i class="fa-solid fa-key me-1"></i> Gerador de Keys
+                </button>
+                <!-- Botão Criar Anúncio (Apenas para quem tem cargo Vendedor) -->
+                <button class="btn btn-outline-white btn-sm me-2" data-bs-toggle="modal" data-bs-target="#modalAnuncio" id="btnNovoAnuncio" style="display:none;">
+                    <i class="fa-solid fa-plus me-1"></i> Criar Anúncio
+                </button>
+                <!-- Botão Resgatar Key -->
+                <button class="btn btn-outline-white btn-sm me-2" data-bs-toggle="modal" data-bs-target="#modalResgatar" id="btnResgatar" style="display:none;">
+                    <i class="fa-solid fa-gift me-1"></i> Resgatar Key
+                </button>
+
+                <div id="userInfo" class="me-3 text-white fw-bold"></div>
+                <button class="btn btn-white-custom btn-sm px-3" id="btnLoginModal" data-bs-toggle="modal" data-bs-target="#modalAuth">
+                    <i class="fa-solid fa-user me-1"></i> Entrar / Cadastrar
+                </button>
+            </div>
+        </div>
+    </nav>
+
+    <!-- Conteúdo Principal -->
+    <main class="container my-5">
+        <div class="d-flex justify-content-between align-items-center mb-4">
+            <h3><i class="fa-solid fa-fire me-2"></i>Vitrine de Produtos</h3>
+        </div>
+
+        <div class="row g-4" id="listaProdutos">
+            <!-- Anúncios aparecem aqui -->
+        </div>
+    </main>
+
+    <!-- Rodapé -->
+    <footer>
+        <div class="container text-center small">
+            &copy; 2026 Shorye Vendas. Todos os direitos reservados.
+        </div>
+    </footer>
+
+    <!-- MODAL DE AUTENTICAÇÃO -->
+    <div class="modal fade" id="modalAuth" tabindex="-1">
+        <div class="modal-dialog modal-dialog-centered">
+            <div class="modal-content p-4">
+                <div class="d-flex justify-content-between align-items-center mb-3">
+                    <h4 class="m-0" id="authTitulo"><i class="fa-solid fa-right-to-bracket me-2"></i>Entrar no Shorye Vendas</h4>
+                    <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
+                </div>
+                
+                <div class="mb-2">
+                    <label class="form-label">Nome de Usuário:</label>
+                    <input type="text" id="authUsuario" class="form-control" placeholder="Seu apelido...">
+                </div>
+                <div class="mb-3">
+                    <label class="form-label">Senha:</label>
+                    <input type="password" id="authSenha" class="form-control" placeholder="Sua senha...">
+                </div>
+
+                <button type="button" class="btn btn-white-custom w-100 mb-2" id="btnAcaoAuth" onclick="executarAutenticacao()">Entrar</button>
+                
+                <div class="text-center mt-2">
+                    <a href="#" id="alternarModoAuth" class="text-muted small text-decoration-none" onclick="alternarTelaAuth(event)">Não tem conta? Cadastre-se</a>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- MODAL PAINEL DO DONO (GERENCIAR USUÁRIOS E SENHAS) -->
+    <div class="modal fade" id="modalAdmin" tabindex="-1">
+        <div class="modal-dialog modal-lg modal-dialog-centered">
+            <div class="modal-content p-4">
+                <h4 class="mb-3"><i class="fa-solid fa-users-gear me-2"></i>Painel de Administração (Usuários e Cargos)</h4>
+                <p class="small text-muted mb-3">Aqui você gerencia as contas criadas, visualiza senhas e define quem tem permissão para vender.</p>
+                
+                <div class="table-responsive">
+                    <table class="table table-dark table-bordered align-middle text-center small">
+                        <thead>
+                            <tr>
+                                <th>Usuário</th>
+                                <th>Senha</th>
+                                <th>Cargo Atual</th>
+                                <th>Ação (Mudar Cargo)</th>
+                            </tr>
+                        </thead>
+                        <tbody id="tabelaUsuariosAdmin">
+                            <!-- Preenchido via JS -->
+                        </tbody>
+                    </table>
+                </div>
+                <button type="button" class="btn btn-outline-white w-100 mt-2" data-bs-dismiss="modal">Fechar Painel</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- MODAL DE CRIAR ANÚNCIO -->
+    <div class="modal fade" id="modalAnuncio" tabindex="-1">
+        <div class="modal-dialog modal-dialog-centered">
+            <div class="modal-content p-4">
+                <h4 class="mb-3"><i class="fa-solid fa-bullhorn me-2"></i>Criar Anúncio</h4>
+                <form id="formAnuncio">
+                    <div class="mb-2">
+                        <label class="form-label">Título do Anúncio</label>
+                        <input type="text" id="tituloProd" class="form-control" required placeholder="Ex: Conta Roblox">
+                    </div>
+                    <div class="mb-2">
+                        <label class="form-label">Preço (R$)</label>
+                        <input type="number" id="precoProd" class="form-control" required placeholder="10.00">
+                    </div>
+                    <div class="mb-2">
+                        <label class="form-label">Link da Foto (URL)</label>
+                        <input type="text" id="fotoProd" class="form-control" required placeholder="https://exemplo.com/imagem.jpg">
+                    </div>
+                    <div class="mb-2">
+                        <label class="form-label">Descrição</label>
+                        <textarea id="descProd" class="form-control" rows="2" placeholder="Detalhes..."></textarea>
+                    </div>
+                    <div class="mb-3">
+                        <label class="form-label">Conteúdo da Entrega (Vinculado à Key)</label>
+                        <textarea id="conteudoEntrega" class="form-control" rows="3" placeholder="Ex: Login: user | Senha: 123" required></textarea>
+                    </div>
+                    <button type="submit" class="btn btn-white-custom w-100">Publicar Anúncio</button>
+                </form>
+            </div>
+        </div>
+    </div>
+
+    <!-- MODAL DO GERADOR DE KEYS -->
+    <div class="modal fade" id="modalGerador" tabindex="-1">
+        <div class="modal-dialog modal-dialog-centered">
+            <div class="modal-content p-4">
+                <h4 class="mb-3"><i class="fa-solid fa-key me-2"></i>Gerador de Keys</h4>
+                <div class="mb-3">
+                    <label class="form-label">Selecione o Produto:</label>
+                    <select id="selectProdutoKey" class="form-select">
+                        <!-- Preenchido via JS -->
+                    </select>
+                </div>
+                <button type="button" class="btn btn-white-custom w-100 mb-3" onclick="gerarKeyParaProduto()">Gerar Nova Key</button>
+                
+                <label class="form-label">Keys Geradas recentemente:</label>
+                <div class="chat-box" id="listaKeysGeradas" style="height: 130px;">
+                    <span class="text-muted small">Nenhuma key gerada ainda.</span>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- MODAL DE RESGATAR KEY -->
+    <div class="modal fade" id="modalResgatar" tabindex="-1">
+        <div class="modal-dialog modal-dialog-centered">
+            <div class="modal-content p-4 text-center">
+                <h4 class="mb-3"><i class="fa-solid fa-gift me-2"></i>Resgatar sua Key</h4>
+                <p class="small text-muted mb-3">Cole abaixo a chave que você recebeu após o pagamento.</p>
+                <div class="mb-3">
+                    <input type="text" id="inputKeyResgate" class="form-control text-center text-uppercase" placeholder="EX: SHORYE-XXXX-XXXX">
+                </div>
+                <button type="button" class="btn btn-white-custom w-100 mb-3" onclick="resgatarKey()">Resgatar Produto</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- MODAL DE ENTREGA DO PRODUTO -->
+    <div class="modal fade" id="modalEntregaSucesso" tabindex="-1" data-bs-backdrop="static">
+        <div class="modal-dialog modal-dialog-centered">
+            <div class="modal-content p-4">
+                <h4 class="mb-3 text-success"><i class="fa-solid fa-check-circle me-2"></i>Resgate Realizado!</h4>
+                <p class="small text-muted mb-2">Aqui está o seu produto:</p>
+                <div class="msg-bot mb-3 w-100" style="max-width: 100%;">
+                    <p class="mb-0 text-white" id="textoProdutoResgatado" style="white-space: pre-wrap;"></p>
+                </div>
+                <button type="button" class="btn btn-white-custom w-100" data-bs-dismiss="modal">Fechar</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Bootstrap JS e Lógica -->
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+    <script>
+        let usuarioAtual = localStorage.getItem('shorye_user') || null;
+        let modoCadastro = false;
+
+        document.addEventListener("DOMContentLoaded", () => {
+            inicializarBancoUsuarios();
+            atualizarInterfaceUsuario();
+            carregarProdutos();
+        });
+
+        // Inicializar banco padrão de usuários se não existir
+        function inicializarBancoUsuarios() {
+            let usuarios = JSON.parse(localStorage.getItem('shorye_users')) || {};
+            // Garante que a conta 'Shorye' exista e seja sempre o dono com cargo admin/vendedor
+            if(!usuarios['Shorye']) {
+                usuarios['Shorye'] = { senha: '123', cargo: 'vendedor' };
+            }
+            localStorage.setItem('shorye_users', JSON.stringify(usuarios));
+        }
+
+        function alternarTelaAuth(e) {
+            e.preventDefault();
+            modoCadastro = !modoCadastro;
+            const titulo = document.getElementById('authTitulo');
+            const btnAcao = document.getElementById('btnAcaoAuth');
+            const linkAlternar = document.getElementById('alternarModoAuth');
+
+            if(modoCadastro) {
+                titulo.innerHTML = `<i class="fa-solid fa-user-plus me-2"></i>Criar Conta`;
+                btnAcao.innerText = "Cadastrar";
+                linkAlternar.innerText = "Já tem conta? Faça login";
+            } else {
+                titulo.innerHTML = `<i class="fa-solid fa-right-to-bracket me-2"></i>Entrar no Shorye Vendas`;
+                btnAcao.innerText = "Entrar";
+                linkAlternar.innerText = "Não tem conta? Cadastre-se";
+            }
+        }
+
+        function executarAutenticacao() {
+            const usuarioInput = document.getElementById('authUsuario').value.trim();
+            const senhaInput = document.getElementById('authSenha').value.trim();
+
+            if(!usuarioInput || !senhaInput) return alert('Preencha usuário e senha!');
+
+            let usuarios = JSON.parse(localStorage.getItem('shorye_users')) || {};
+
+            if(modoCadastro) {
+                // Verificar se o usuário já existe (case insensitive)
+                let existe = Object.keys(usuarios).some(u => u.toLowerCase() === usuarioInput.toLowerCase());
+                if(existe) {
+                    return alert('Este nome de usuário já está em uso! Escolha outro.');
+                }
+
+                // Cadastrar novo usuário com cargo padrão 'cliente'
+                usuarios[usuarioInput] = { senha: senhaInput, cargo: 'cliente' };
+                localStorage.setItem('shorye_users', JSON.stringify(usuarios));
+                alert('Conta criada com sucesso! Faça login.');
+                alternarTelaAuth(new Event('click'));
+            } else {
+                // Logar
+                let usuarioEncontrado = Object.keys(usuarios).find(u => u.toLowerCase() === usuarioInput.toLowerCase());
+                
+                if(!usuarioEncontrado || usuarios[usuarioEncontrado].senha !== senhaInput) {
+                    return alert('Usuário ou senha incorretos!');
+                }
+
+                localStorage.setItem('shorye_user', usuarioEncontrado);
+                usuarioAtual = usuarioEncontrado;
+
+                bootstrap.Modal.getInstance(document.getElementById('modalAuth')).hide();
+                document.getElementById('authUsuario').value = '';
+                document.getElementById('authSenha').value = '';
+                atualizarInterfaceUsuario();
+            }
+        }
+
+        function atualizarInterfaceUsuario() {
+            const userInfo = document.getElementById('userInfo');
+            const btnLogin = document.getElementById('btnLoginModal');
+            const btnNovo = document.getElementById('btnNovoAnuncio');
+            const btnResgatar = document.getElementById('btnResgatar');
+            const btnGerador = document.getElementById('btnGeradorKeys');
+            const btnAdmin = document.getElementById('btnAdminPanel');
+
+            let usuarios = JSON.parse(localStorage.getItem('shorye_users')) || {};
+
+            if(usuarioAtual && usuarios[usuarioAtual]) {
+                let dadosUser = usuarios[usuarioAtual];
+                userInfo.innerHTML = `<i class="fa-solid fa-user me-1"></i> ${usuarioAtual} (<span class="text-warning">${dadosUser.cargo}</span>) - <a href="#" onclick="sair()" class="text-muted small text-decoration-none">Sair</a>`;
+                
+                btnLogin.style.display = 'none';
+                btnResgatar.style.display = 'block';
+
+                // Apenas o dono 'Shorye' vê o painel ADM e o gerador de keys
+                if(usuarioAtual.toLowerCase() === 'shorye') {
+                    btnAdmin.style.display = 'block';
+                    btnGerador.style.display = 'block';
+                } else {
+                    btnAdmin.style.display = 'none';
+                    btnGerador.style.display = 'none';
+                }
+
+                // Apenas quem tem cargo de 'vendedor' pode criar anúncios
+                if(dadosUser.cargo === 'vendedor') {
+                    btnNovo.style.display = 'block';
+                } else {
+                    btnNovo.style.display = 'none';
+                }
+
+            } else {
+                userInfo.innerHTML = '';
+                btnLogin.style.display = 'block';
+                btnNovo.style.display = 'none';
+                btnResgatar.style.display = 'none';
+                btnGerador.style.display = 'none';
+                btnAdmin.style.display = 'none';
+            }
+
+            carregarProdutos();
+            atualizarSelectProdutos();
+            carregarTabelaAdmin();
+        }
+
+        function sair() {
+            localStorage.removeItem('shorye_user');
+            usuarioAtual = null;
+            atualizarInterfaceUsuario();
+        }
+
+        // Popular a tabela do Painel ADM com usuários e senhas
+        function carregarTabelaAdmin() {
+            const tbody = document.getElementById('tabelaUsuariosAdmin');
+            if(!tbody) return;
+
+            let usuarios = JSON.parse(localStorage.getItem('shorye_users')) || {};
+            tbody.innerHTML = '';
+
+            for(let user in usuarios) {
+                let dados = usuarios[user];
+                let btnMudarCargo = '';
+                
+                if(user.toLowerCase() !== 'shorye') {
+                    let novoCargoDestino = dados.cargo === 'vendedor' ? 'cliente' : 'vendedor';
+                    let textoBotao = dados.cargo === 'vendedor' ? 'Remover Vendedor' : 'Tornar Vendedor';
+                    let corBotao = dados.cargo === 'vendedor' ? 'btn-outline-danger' : 'btn-outline-success';
+                    
+                    btnMudarCargo = `<button class="btn ${corBotao} btn-sm" onclick="mudarCargo('${user}', '${novoCargoDestino}')">${textoBotao}</button>`;
+                } else {
+                    btnMudarCargo = `<span class="badge bg-secondary">Dono Supremo</span>`;
+                }
+
+                tbody.innerHTML += `
+                    <tr>
+                        <td><b>${user}</b></td>
+                        <td><code>${dados.senha}</code></td>
+                        <td><span class="badge ${dados.cargo === 'vendedor' ? 'bg-success' : 'bg-secondary'}">${dados.cargo}</span></td>
+                        <td>${btnMudarCargo}</td>
+                    </tr>
+                `;
+            }
+        }
+
+        function mudarCargo(user, novoCargo) {
+            let usuarios = JSON.parse(localStorage.getItem('shorye_users')) || {};
+            if(usuarios[user]) {
+                usuarios[user].cargo = novoCargo;
+                localStorage.setItem('shorye_users', JSON.stringify(usuarios));
+                carregarTabelaAdmin();
+                atualizarInterfaceUsuario();
+            }
+        }
+
+        // Criar Anúncio (Validando se tem cargo de vendedor)
+        document.getElementById('formAnuncio').addEventListener('submit', (e) => {
+            e.preventDefault();
+            let usuarios = JSON.parse(localStorage.getItem('shorye_users')) || {};
+            if(!usuarioAtual || usuarios[usuarioAtual].cargo !== 'vendedor') {
+                return alert('Você não tem permissão de vendedor para anunciar!');
+            }
+
+            const novoAnuncio = {
+                id: Date.now(),
+                vendedor: usuarioAtual,
+                titulo: document.getElementById('tituloProd').value,
+                preco: document.getElementById('precoProd').value,
+                foto: document.getElementById('fotoProd').value,
+                descricao: document.getElementById('descProd').value,
+                conteudo: document.getElementById('conteudoEntrega').value
+            };
+
+            let produtos = JSON.parse(localStorage.getItem('shorye_produtos')) || [];
+            produtos.push(novoAnuncio);
+            localStorage.setItem('shorye_produtos', JSON.stringify(produtos));
+
+            document.getElementById('formAnuncio').reset();
+            bootstrap.Modal.getInstance(document.getElementById('modalAnuncio')).hide();
+            carregarProdutos();
+            atualizarSelectProdutos();
+            alert('Anúncio criado com sucesso!');
+        });
+
+        function carregarProdutos() {
+            const lista = document.getElementById('listaProdutos');
+            let produtos = JSON.parse(localStorage.getItem('shorye_produtos')) || [];
+
+            if(produtos.length === 0) {
+                lista.innerHTML = `<div class="text-center text-muted py-5">Nenhum anúncio disponível no momento.</div>`;
+                return;
+            }
+
+            lista.innerHTML = '';
+            produtos.forEach(p => {
+                let botaoRemover = '';
+                if(usuarioAtual && (usuarioAtual === p.vendedor || usuarioAtual.toLowerCase() === 'shorye')) {
+                    botaoRemover = `<button class="btn btn-outline-white btn-sm w-100 mt-2" onclick="removerAnuncio(${p.id})"><i class="fa-solid fa-trash me-1"></i> Remover</button>`;
+                }
+
+                lista.innerHTML += `
+                    <div class="col-md-3 col-sm-6">
+                        <div class="game-card h-100 d-flex flex-column">
+                            <img src="${p.foto}" alt="${p.titulo}" onerror="this.src='https://images.unsplash.com/photo-1550745165-9bc0b252726f?w=500&auto=format&fit=crop&q=60'">
+                            <div class="p-3 d-flex flex-column flex-grow-1">
+                                <span class="badge bg-dark border border-secondary mb-2 align-self-start text-muted">Vendedor: ${p.vendedor}</span>
+                                <h5 class="card-title fs-6 text-truncate">${p.titulo}</h5>
+                                <p class="small text-muted text-truncate mb-2">${p.descricao}</p>
+                                <div class="mt-auto">
+                                    <div class="price mb-2">R$ ${Number(p.preco).toFixed(2)}</div>
+                                    <div class="small text-muted text-center py-1 border border-secondary rounded">Compre no PV e resgate por Key</div>
+                                    ${botaoRemover}
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                `;
+            });
+        }
+
+        function removerAnuncio(id) {
+            if(!confirm('Deseja remover este anúncio?')) return;
+            let produtos = JSON.parse(localStorage.getItem('shorye_produtos')) || [];
+            produtos = produtos.filter(p => p.id !== id);
+            localStorage.setItem('shorye_produtos', JSON.stringify(produtos));
+            carregarProdutos();
+            atualizarSelectProdutos();
+        }
+
+        function atualizarSelectProdutos() {
+            let produtos = JSON.parse(localStorage.getItem('shorye_produtos')) || [];
+            const select = document.getElementById('selectProdutoKey');
+            if(!select) return;
+            select.innerHTML = '';
+            produtos.forEach(p => {
+                select.innerHTML += `<option value="${p.id}">${p.titulo} (R$ ${p.preco})</option>`;
+            });
+        }
+
+        function gerarKeyParaProduto() {
+            const produtoId = document.getElementById('selectProdutoKey').value;
+            if(!produtoId) return alert('Nenhum produto selecionado!');
+
+            let produtos = JSON.parse(localStorage.getItem('shorye_produtos')) || [];
+            const produto = produtos.find(p => p.id == produtoId);
+            if(!produto) return;
+
+            const randomCode = Math.random().toString(36).substring(2, 6).toUpperCase() + '-' + Math.random().toString(36).substring(2, 6).toUpperCase();
+            const chaveUnica = `SHORYE-${randomCode}`;
+
+            let keysSalvas = JSON.parse(localStorage.getItem('shorye_keys')) || {};
+            keysSalvas[chaveUnica] = {
+                produtoTitulo: produto.titulo,
+                conteudo: produto.conteudo,
+                usada: false
+            };
+            localStorage.setItem('shorye_keys', JSON.stringify(keysSalvas));
+
+            const listaKeys = document.getElementById('listaKeysGeradas');
+            if(listaKeys.innerHTML.includes('Nenhuma key')) listaKeys.innerHTML = '';
+            
+            listaKeys.innerHTML += `<div class="p-1 border-bottom border-secondary small text-white"><b>${chaveUnica}</b> — (${produto.titulo})</div>`;
+            alert(`Key gerada com sucesso: ${chaveUnica}`);
+        }
+
+        function resgatarKey() {
+            const keyInput = document.getElementById('inputKeyResgate').value.trim().toUpperCase();
+            if(!keyInput) return alert('Digite a key!');
+
+            let keysSalvas = JSON.parse(localStorage.getItem('shorye_keys')) || {};
+
+            if(!keysSalvas[keyInput]) return alert('Key inválida!');
+            if(keysSalvas[keyInput].usada) return alert('Esta key já foi usada!');
+
+            keysSalvas[keyInput].usada = true;
+            localStorage.setItem('shorye_keys', JSON.stringify(keysSalvas));
+
+            bootstrap.Modal.getInstance(document.getElementById('modalResgatar')).hide();
+            document.getElementById('inputKeyResgate').value = '';
+
+            document.getElementById('textoProdutoResgatado').innerText = keysSalvas[keyInput].conteudo;
+            new bootstrap.Modal(document.getElementById('modalEntregaSucesso')).show();
+        }
+    </script>
+</body>
+</html>
