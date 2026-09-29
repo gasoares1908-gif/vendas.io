@@ -116,7 +116,7 @@
             padding: 10px;
         }
 
-        /* Estilos do Painel do Cliente (Engrenagem) */
+        /* Estilos do Painel do Cliente / Vendedor */
         .client-panel-sidebar {
             border-right: 1px solid var(--border-color);
             background: rgba(255, 255, 255, 0.01);
@@ -164,35 +164,19 @@
             align-items: center;
         }
 
-        .chat-messages-area {
-            height: 250px;
-            overflow-y: auto;
-            background: #000000;
+        .chat-ticket-item {
+            background: rgba(255, 255, 255, 0.02);
             border: 1px solid var(--border-color);
             border-radius: 6px;
-            padding: 10px;
-            display: flex;
-            flex-direction: column;
-            gap: 8px;
-            margin-bottom: 10px;
+            padding: 10px 12px;
+            margin-bottom: 8px;
+            cursor: pointer;
+            transition: 0.2s;
         }
 
-        .chat-msg {
-            max-width: 75%;
-            padding: 8px 12px;
-            border-radius: 8px;
-            font-size: 0.9rem;
-        }
-
-        .chat-msg.incoming {
-            background: #222222;
-            align-self: flex-start;
-        }
-
-        .chat-msg.outgoing {
-            background: #ffffff;
-            color: #000000;
-            align-self: flex-end;
+        .chat-ticket-item:hover {
+            border-color: #ffffff;
+            background: rgba(255, 255, 255, 0.05);
         }
 
         footer {
@@ -211,8 +195,8 @@
         <div class="container">
             <a class="navbar-brand" href="#"><i class="fa-solid fa-store me-2"></i>SHORYE VENDAS</a>
             <div class="ms-auto d-flex align-items-center">
-                <!-- Botão da Engrenagem (Painel do Cliente / Histórico & Chats) -->
-                <button class="btn btn-outline-white btn-sm me-2" data-bs-toggle="modal" data-bs-target="#modalClientPanel" id="btnClientPanel" style="display:none;" title="Painel do Cliente">
+                <!-- Botão da Engrenagem (Painel do Cliente / Vendedor) -->
+                <button class="btn btn-outline-white btn-sm me-2" data-bs-toggle="modal" data-bs-target="#modalClientPanel" id="btnClientPanel" style="display:none;" title="Painel Geral">
                     <i class="fa-solid fa-gear"></i>
                 </button>
 
@@ -282,23 +266,21 @@
         </div>
     </div>
 
-    <!-- MODAL PAINEL DO CLIENTE (ENGRENAGEM: HISTÓRICO & CHAT) -->
+    <!-- MODAL PAINEL DO CLIENTE / VENDEDOR (ENGRENAGEM) -->
     <div class="modal fade" id="modalClientPanel" tabindex="-1">
         <div class="modal-dialog modal-lg modal-dialog-centered">
             <div class="modal-content p-3">
                 <div class="d-flex justify-content-between align-items-center mb-3 px-2">
-                    <h4 class="m-0"><i class="fa-solid fa-gear me-2"></i>Painel do Cliente</h4>
+                    <h4 class="m-0"><i class="fa-solid fa-gear me-2"></i>Painel Geral</h4>
                     <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
                 </div>
                 <div class="row g-0">
                     <!-- Menu Lateral do Modal -->
-                    <div class="col-md-3 client-panel-sidebar">
+                    <div class="col-md-3 client-panel-sidebar" id="sidebarMenuClient">
                         <button class="tab-btn-client active" onclick="switchClientTab(event, 'paneHistory')">
                             <i class="fa-solid fa-box-archive me-1"></i> Histórico de Keys
                         </button>
-                        <button class="tab-btn-client" onclick="switchClientTab(event, 'paneChats')">
-                            <i class="fa-solid fa-comments me-1"></i> Chat com Vendedor
-                        </button>
+                        <!-- Aba de Conversas do Vendedor injetada via JS se for vendedor -->
                     </div>
                     <!-- Conteúdo das Abas -->
                     <div class="col-md-9 p-3">
@@ -310,15 +292,11 @@
                             </div>
                         </div>
 
-                        <!-- Aba 2: Chat Privado -->
-                        <div class="client-pane" id="paneChats">
-                            <h5 class="fs-6 mb-3 text-muted">Mensagens e Suporte com o Vendedor:</h5>
-                            <div class="chat-messages-area" id="chatMessagesArea">
-                                <div class="chat-msg incoming">Olá! Resgate sua key para iniciar o atendimento privado com o vendedor.</div>
-                            </div>
-                            <div class="input-group">
-                                <input type="text" id="inputChatMessage" class="form-control form-control-sm" placeholder="Digite sua mensagem..." onkeypress="checkChatEnter(event)">
-                                <button class="btn btn-white-custom btn-sm px-3" onclick="enviarMensagemChat()">Enviar</button>
+                        <!-- Aba 2: Conversas / Pedidos Manuais (Visível apenas para Vendedores) -->
+                        <div class="client-pane" id="paneVendorChats">
+                            <h5 class="fs-6 mb-3 text-muted"><i class="fa-solid fa-comments me-1"></i> Respostas dos Clientes (Modo Manual):</h5>
+                            <div id="listaConversasVendedor">
+                                <span class="text-muted small">Nenhum pedido manual pendente no momento.</span>
                             </div>
                         </div>
                     </div>
@@ -448,7 +426,7 @@
                 <div class="mb-3">
                     <input type="text" id="respostaClienteInput" class="form-control" placeholder="Digite sua resposta aqui...">
                 </div>
-                <button type="button" class="btn btn-white-custom w-100" onclick="concluirResgateManual()">Enviar e Receber Produto</button>
+                <button type="button" class="btn btn-white-custom w-100" onclick="concluirResgateManual()">Enviar Resposta</button>
             </div>
         </div>
     </div>
@@ -593,6 +571,7 @@
             const btnGerador = document.getElementById('btnGeradorKeys');
             const btnAdmin = document.getElementById('btnAdminPanel');
             const btnClientPanel = document.getElementById('btnClientPanel');
+            const sidebarMenu = document.getElementById('sidebarMenuClient');
 
             if(!usuarioAtual || !db) {
                 userInfo.innerHTML = '';
@@ -627,11 +606,28 @@
                     btnGerador.style.display = 'none';
                 }
 
+                // Configura o menu lateral do Modal da Engrenagem baseado no cargo
+                let sidebarHtml = `
+                    <button class="tab-btn-client active" onclick="switchClientTab(event, 'paneHistory')">
+                        <i class="fa-solid fa-box-archive me-1"></i> Histórico de Keys
+                    </button>
+                `;
+
                 if(dadosUser.cargo === 'vendedor') {
                     btnNovo.style.display = 'block';
+                    sidebarHtml += `
+                        <button class="tab-btn-client" onclick="switchClientTab(event, 'paneVendorChats')">
+                            <i class="fa-solid fa-comments me-1"></i> Conversas / Pedidos
+                        </button>
+                    `;
+                    document.getElementById('paneVendorChats').style.display = 'none';
+                    carregarConversasVendedor();
                 } else {
                     btnNovo.style.display = 'none';
+                    document.getElementById('paneVendorChats').style.display = 'none';
                 }
+
+                sidebarMenu.innerHTML = sidebarHtml;
                 
                 carregarTabelaAdmin();
                 carregarHistoricoCliente();
@@ -777,6 +773,11 @@
                     `;
                 });
             });
+
+            // Ouvinte em tempo real para os chats/pedidos manuais do vendedor
+            db.collection("chats_manuais").onSnapshot(() => {
+                carregarConversasVendedor();
+            });
         }
 
         async function removerAnuncio(id) {
@@ -870,7 +871,18 @@
             const resposta = document.getElementById('respostaClienteInput').value.trim();
             if(!resposta) return alert('Você precisa digitar a resposta solicitada pelo bot!');
 
-            if(!db || !keyEmProgresso) return;
+            if(!db || !keyEmProgresso || !usuarioAtual) return;
+
+            // Salva na coleção de chats manuais direcionado ao vendedor responsável
+            await db.collection("chats_manuais").add({
+                comprador: usuarioAtual,
+                vendedor: keyEmProgresso.vendedor || 'Shorye',
+                produtoTitulo: keyEmProgresso.produtoTitulo,
+                mensagemCliente: resposta,
+                chave: keyEmProgresso.id,
+                conteudoProduto: keyEmProgresso.conteudo,
+                data: new Date().toLocaleDateString('pt-BR')
+            });
 
             await registrarHistoricoEConcluir(keyEmProgresso.id, keyEmProgresso, `Resposta enviada: ${resposta}`);
             bootstrap.Modal.getInstance(document.getElementById('modalInteracaoManual')).hide();
@@ -878,7 +890,6 @@
         }
 
         async function registrarHistoricoEConcluir(keyId, dadosKey, detalhesExtra) {
-            // Salva no histórico do usuário logado no Firestore
             if(usuarioAtual) {
                 await db.collection("historico_compras").add({
                     comprador: usuarioAtual,
@@ -891,7 +902,6 @@
                 });
             }
 
-            // Apaga a key da nuvem para que não possa ser usada novamente
             await db.collection("keys").doc(keyId).delete();
 
             document.getElementById('textoProdutoResgatado').innerText = dadosKey.conteudo;
@@ -933,6 +943,38 @@
             }
         }
 
+        async function carregarConversasVendedor() {
+            const container = document.getElementById('listaConversasVendedor');
+            if(!container || !db || !usuarioAtual) return;
+
+            try {
+                let snapshot = await db.collection("chats_manuais").where("vendedor", "==", usuarioAtual).get();
+                if(snapshot.empty) {
+                    container.innerHTML = `<span class="text-muted small">Nenhum pedido manual pendente no momento.</span>`;
+                    return;
+                }
+
+                container.innerHTML = '';
+                snapshot.forEach(doc => {
+                    let chat = doc.data();
+                    container.innerHTML += `
+                        <div class="chat-ticket-item">
+                            <div class="d-flex justify-content-between align-items-center mb-1">
+                                <span class="fw-bold text-warning"><i class="fa-solid fa-user me-1"></i> ${chat.comprador}</span>
+                                <span class="badge bg-secondary small">${chat.data}</span>
+                            </div>
+                            <p class="small mb-1 text-muted">Produto: <b>${chat.produtoTitulo}</b></p>
+                            <div class="p-2 bg-black border border-secondary rounded small text-white">
+                                <b>Mensagem do cliente:</b> "${chat.mensagemCliente}"
+                            </div>
+                        </div>
+                    `;
+                });
+            } catch(e) {
+                console.log("Erro ao carregar conversas do vendedor:", e);
+            }
+        }
+
         // Funções de navegação dentro do Modal da Engrenagem
         function switchClientTab(evt, paneId) {
             document.querySelectorAll('.client-pane').forEach(p => p.classList.remove('active'));
@@ -940,27 +982,6 @@
 
             document.getElementById(paneId).classList.add('active');
             evt.currentTarget.classList.add('active');
-        }
-
-        function enviarMensagemChat() {
-            const input = document.getElementById('inputChatMessage');
-            const texto = input.value.trim();
-            if(!texto) return;
-
-            const area = document.getElementById('chatMessagesArea');
-            const msgDiv = document.createElement('div');
-            msgDiv.className = 'chat-msg outgoing';
-            msgDiv.innerText = texto;
-            area.appendChild(msgDiv);
-
-            input.value = '';
-            area.scrollTop = area.scrollHeight;
-        }
-
-        function checkChatEnter(e) {
-            if(e.key === 'Enter') {
-                enviarMensagemChat();
-            }
         }
     </script>
 </body>
