@@ -135,7 +135,7 @@
                 <button class="btn btn-white-custom btn-sm me-2" data-bs-toggle="modal" data-bs-target="#modalAdmin" id="btnAdminPanel" style="display:none;">
                     <i class="fa-solid fa-shield-halved me-1"></i> Painel ADM
                 </button>
-                <button class="btn btn-outline-white btn-sm me-2" data-bs-toggle="modal" data-bs-target="#modalGerador" id="btnGeradorKeys" style="display:none;">
+                <button class="btn btn-outline-white btn-sm me-2" data-bs-toggle="modal" data-bs-target="#modalGerador" id="btnGeradorKeys" style="display:none;" onclick="carregarKeysGeradas()">
                     <i class="fa-solid fa-key me-1"></i> Gerador de Keys
                 </button>
                 <button class="btn btn-outline-white btn-sm me-2" data-bs-toggle="modal" data-bs-target="#modalAnuncio" id="btnNovoAnuncio" style="display:none;">
@@ -257,7 +257,7 @@
                         </select>
                     </div>
 
-                    <!-- Campo exclusivo para o Modo Manual (O que o bot vai PEDIR pro cliente mandar) -->
+                    <!-- Campo exclusivo para o Modo Manual -->
                     <div class="mb-2" id="blocoMensagemPedido" style="display: none;">
                         <label class="form-label text-info"><i class="fa-solid fa-comment-dots me-1"></i> O que o bot deve pedir para o comprador enviar?</label>
                         <input type="text" id="mensagemPedido" class="form-control" placeholder="Ex: Digite seu nick do jogo para receber o item...">
@@ -288,9 +288,9 @@
                 </div>
                 <button type="button" class="btn btn-white-custom w-100 mb-3" onclick="gerarKeyParaProduto()">Gerar Nova Key</button>
                 
-                <label class="form-label">Keys Geradas:</label>
+                <label class="form-label">Keys Ativas na Nuvem:</label>
                 <div class="chat-box" id="listaKeysGeradas">
-                    <span class="text-muted small">Nenhuma key gerada ainda.</span>
+                    <span class="text-muted small">Carregando keys...</span>
                 </div>
             </div>
         </div>
@@ -667,14 +667,46 @@
                 tipoEntrega: produto.tipoEntrega || 'auto',
                 mensagemPedido: produto.mensagemPedido || '',
                 conteudo: produto.conteudo,
-                usada: false
+                criadoEm: Date.now()
             });
 
+            alert(`Key gerada e salva na nuvem com sucesso: ${chaveUnica}`);
+            carregarKeysGeradas();
+        }
+
+        // CARREGA APENAS AS KEYS QUE AINDA NÃO FORAM USADAS
+        async function carregarKeysGeradas() {
             const listaKeys = document.getElementById('listaKeysGeradas');
-            if(listaKeys.innerHTML.includes('Nenhuma key')) listaKeys.innerHTML = '';
-            
-            listaKeys.innerHTML += `<div class="p-1 border-bottom border-secondary small text-white"><b>${chaveUnica}</b> — (${produto.titulo})</div>`;
-            alert(`Key gerada com sucesso: ${chaveUnica}`);
+            if(!listaKeys || !db) return;
+
+            try {
+                let snapshot = await db.collection("keys").get();
+                if(snapshot.empty) {
+                    listaKeys.innerHTML = `<span class="text-muted small">Nenhuma key ativa no momento.</span>`;
+                    return;
+                }
+
+                listaKeys.innerHTML = '';
+                let count = 0;
+                snapshot.forEach(doc => {
+                    let kId = doc.id;
+                    let kData = doc.data();
+                    count++;
+
+                    listaKeys.innerHTML += `
+                        <div class="p-1 border-bottom border-secondary small text-white d-flex justify-content-between align-items-center">
+                            <span><b>${kId}</b> — ${kData.produtoTitulo}</span>
+                            <span class="badge bg-success">Disponível</span>
+                        </div>
+                    `;
+                });
+
+                if(count === 0) {
+                    listaKeys.innerHTML = `<span class="text-muted small">Nenhuma key ativa no momento.</span>`;
+                }
+            } catch(e) {
+                console.log("Erro ao carregar keys:", e);
+            }
         }
 
         async function verificarResgateKey() {
@@ -684,26 +716,26 @@
             let keyRef = db.collection("keys").doc(keyInput);
             let keyDoc = await keyRef.get();
 
-            if(!keyDoc.exists) return alert('Key inválida!');
+            // Se a key não existe ou já foi apagada/usada, dá erro e não funciona mais
+            if(!keyDoc.exists) return alert('Key inválida ou já utilizada!');
+            
             let dadosKey = keyDoc.data();
-
-            if(dadosKey.usada) return alert('Esta key já foi usada!');
-
             keyEmProgresso = { id: keyInput, ...dadosKey };
 
             bootstrap.Modal.getInstance(document.getElementById('modalResgatar')).hide();
             document.getElementById('inputKeyResgate').value = '';
 
             if(dadosKey.tipoEntrega === 'manual') {
-                // Abre o modal pedindo a interação do cliente antes de dar o produto
                 document.getElementById('textoPedidoBot').innerText = dadosKey.mensagemPedido || "O bot está pedindo uma resposta para continuar:";
                 document.getElementById('respostaClienteInput').value = '';
                 new bootstrap.Modal(document.getElementById('modalInteracaoManual')).show();
             } else {
-                // Modo automático: entrega direto
-                await keyRef.update({ usada: true });
+                // APAGA A KEY DA NUVEM IMEDIATAMENTE (DESTRUÍDA APÓS 1 USO)
+                await keyRef.delete();
+
                 document.getElementById('textoProdutoResgatado').innerText = dadosKey.conteudo;
                 new bootstrap.Modal(document.getElementById('modalEntregaSucesso')).show();
+                carregarKeysGeradas();
             }
         }
 
@@ -713,13 +745,14 @@
 
             if(!db || !keyEmProgresso) return;
 
-            // Marca a key como usada após o cliente interagir e mandar o que foi pedido
-            await db.collection("keys").doc(keyEmProgresso.id).update({ usada: true });
+            // APAGA A KEY DA NUVEM APÓS CONCLUIR A INTERAÇÃO MANUAL
+            await db.collection("keys").doc(keyEmProgresso.id).delete();
 
             bootstrap.Modal.getInstance(document.getElementById('modalInteracaoManual')).hide();
 
             document.getElementById('textoProdutoResgatado').innerText = keyEmProgresso.conteudo;
             new bootstrap.Modal(document.getElementById('modalEntregaSucesso')).show();
+            carregarKeysGeradas();
             keyEmProgresso = null;
         }
     </script>
