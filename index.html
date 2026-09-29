@@ -116,6 +116,85 @@
             padding: 10px;
         }
 
+        /* Estilos do Painel do Cliente (Engrenagem) */
+        .client-panel-sidebar {
+            border-right: 1px solid var(--border-color);
+            background: rgba(255, 255, 255, 0.01);
+            padding: 10px;
+            display: flex;
+            flex-direction: column;
+            gap: 8px;
+        }
+
+        .tab-btn-client {
+            background: none;
+            border: 1px solid transparent;
+            color: var(--text-muted);
+            padding: 10px 12px;
+            text-align: left;
+            border-radius: 6px;
+            cursor: pointer;
+            font-weight: 500;
+            transition: 0.2s;
+            font-size: 0.9rem;
+        }
+
+        .tab-btn-client:hover, .tab-btn-client.active {
+            background: #ffffff;
+            color: #000000;
+            border-color: #ffffff;
+        }
+
+        .client-pane {
+            display: none;
+        }
+
+        .client-pane.active {
+            display: block;
+        }
+
+        .purchase-history-card {
+            background: rgba(255, 255, 255, 0.02);
+            border: 1px solid var(--border-color);
+            border-radius: 6px;
+            padding: 12px;
+            margin-bottom: 10px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+
+        .chat-messages-area {
+            height: 250px;
+            overflow-y: auto;
+            background: #000000;
+            border: 1px solid var(--border-color);
+            border-radius: 6px;
+            padding: 10px;
+            display: flex;
+            flex-direction: column;
+            gap: 8px;
+            margin-bottom: 10px;
+        }
+
+        .chat-msg {
+            max-width: 75%;
+            padding: 8px 12px;
+            border-radius: 8px;
+            font-size: 0.9rem;
+        }
+
+        .chat-msg.incoming {
+            background: #222222;
+            align-self: flex-start;
+        }
+
+        .chat-msg.outgoing {
+            background: #ffffff;
+            color: #000000;
+            align-self: flex-end;
+        }
+
         footer {
             background-color: #000000;
             border-top: 1px solid var(--border-color);
@@ -132,6 +211,11 @@
         <div class="container">
             <a class="navbar-brand" href="#"><i class="fa-solid fa-store me-2"></i>SHORYE VENDAS</a>
             <div class="ms-auto d-flex align-items-center">
+                <!-- Botão da Engrenagem (Painel do Cliente / Histórico & Chats) -->
+                <button class="btn btn-outline-white btn-sm me-2" data-bs-toggle="modal" data-bs-target="#modalClientPanel" id="btnClientPanel" style="display:none;" title="Painel do Cliente">
+                    <i class="fa-solid fa-gear"></i>
+                </button>
+
                 <button class="btn btn-white-custom btn-sm me-2" data-bs-toggle="modal" data-bs-target="#modalAdmin" id="btnAdminPanel" style="display:none;">
                     <i class="fa-solid fa-shield-halved me-1"></i> Painel ADM
                 </button>
@@ -193,6 +277,51 @@
                 
                 <div class="text-center mt-2">
                     <a href="#" id="alternarModoAuth" class="text-muted small text-decoration-none" onclick="alternarTelaAuth(event)">Não tem conta? Cadastre-se</a>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- MODAL PAINEL DO CLIENTE (ENGRENAGEM: HISTÓRICO & CHAT) -->
+    <div class="modal fade" id="modalClientPanel" tabindex="-1">
+        <div class="modal-dialog modal-lg modal-dialog-centered">
+            <div class="modal-content p-3">
+                <div class="d-flex justify-content-between align-items-center mb-3 px-2">
+                    <h4 class="m-0"><i class="fa-solid fa-gear me-2"></i>Painel do Cliente</h4>
+                    <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
+                </div>
+                <div class="row g-0">
+                    <!-- Menu Lateral do Modal -->
+                    <div class="col-md-3 client-panel-sidebar">
+                        <button class="tab-btn-client active" onclick="switchClientTab(event, 'paneHistory')">
+                            <i class="fa-solid fa-box-archive me-1"></i> Histórico de Keys
+                        </button>
+                        <button class="tab-btn-client" onclick="switchClientTab(event, 'paneChats')">
+                            <i class="fa-solid fa-comments me-1"></i> Chat com Vendedor
+                        </button>
+                    </div>
+                    <!-- Conteúdo das Abas -->
+                    <div class="col-md-9 p-3">
+                        <!-- Aba 1: Histórico de Compras / Keys Resgatadas -->
+                        <div class="client-pane active" id="paneHistory">
+                            <h5 class="fs-6 mb-3 text-muted">Keys que você já resgatou:</h5>
+                            <div id="listaHistoricoKeysComprador">
+                                <span class="text-muted small">Nenhum resgate encontrado no seu histórico.</span>
+                            </div>
+                        </div>
+
+                        <!-- Aba 2: Chat Privado -->
+                        <div class="client-pane" id="paneChats">
+                            <h5 class="fs-6 mb-3 text-muted">Mensagens e Suporte com o Vendedor:</h5>
+                            <div class="chat-messages-area" id="chatMessagesArea">
+                                <div class="chat-msg incoming">Olá! Resgate sua key para iniciar o atendimento privado com o vendedor.</div>
+                            </div>
+                            <div class="input-group">
+                                <input type="text" id="inputChatMessage" class="form-control form-control-sm" placeholder="Digite sua mensagem..." onkeypress="checkChatEnter(event)">
+                                <button class="btn btn-white-custom btn-sm px-3" onclick="enviarMensagemChat()">Enviar</button>
+                            </div>
+                        </div>
+                    </div>
                 </div>
             </div>
         </div>
@@ -463,6 +592,7 @@
             const btnResgatar = document.getElementById('btnResgatar');
             const btnGerador = document.getElementById('btnGeradorKeys');
             const btnAdmin = document.getElementById('btnAdminPanel');
+            const btnClientPanel = document.getElementById('btnClientPanel');
 
             if(!usuarioAtual || !db) {
                 userInfo.innerHTML = '';
@@ -471,6 +601,7 @@
                 btnResgatar.style.display = 'none';
                 btnGerador.style.display = 'none';
                 btnAdmin.style.display = 'none';
+                btnClientPanel.style.display = 'none';
                 return;
             }
 
@@ -486,6 +617,7 @@
                 
                 btnLogin.style.display = 'none';
                 btnResgatar.style.display = 'block';
+                btnClientPanel.style.display = 'block';
 
                 if(usuarioAtual.toLowerCase() === 'shorye') {
                     btnAdmin.style.display = 'block';
@@ -502,6 +634,7 @@
                 }
                 
                 carregarTabelaAdmin();
+                carregarHistoricoCliente();
             } catch(e) {
                 console.log(e);
             }
@@ -664,6 +797,7 @@
 
             await db.collection("keys").doc(chaveUnica).set({
                 produtoTitulo: produto.titulo,
+                vendedor: produto.vendedor,
                 tipoEntrega: produto.tipoEntrega || 'auto',
                 mensagemPedido: produto.mensagemPedido || '',
                 conteudo: produto.conteudo,
@@ -674,7 +808,6 @@
             carregarKeysGeradas();
         }
 
-        // CARREGA APENAS AS KEYS QUE AINDA NÃO FORAM USADAS
         async function carregarKeysGeradas() {
             const listaKeys = document.getElementById('listaKeysGeradas');
             if(!listaKeys || !db) return;
@@ -716,7 +849,6 @@
             let keyRef = db.collection("keys").doc(keyInput);
             let keyDoc = await keyRef.get();
 
-            // Se a key não existe ou já foi apagada/usada, dá erro e não funciona mais
             if(!keyDoc.exists) return alert('Key inválida ou já utilizada!');
             
             let dadosKey = keyDoc.data();
@@ -730,12 +862,7 @@
                 document.getElementById('respostaClienteInput').value = '';
                 new bootstrap.Modal(document.getElementById('modalInteracaoManual')).show();
             } else {
-                // APAGA A KEY DA NUVEM IMEDIATAMENTE (DESTRUÍDA APÓS 1 USO)
-                await keyRef.delete();
-
-                document.getElementById('textoProdutoResgatado').innerText = dadosKey.conteudo;
-                new bootstrap.Modal(document.getElementById('modalEntregaSucesso')).show();
-                carregarKeysGeradas();
+                await registrarHistoricoEConcluir(keyInput, dadosKey, "Resgatado de forma automática.");
             }
         }
 
@@ -745,15 +872,95 @@
 
             if(!db || !keyEmProgresso) return;
 
-            // APAGA A KEY DA NUVEM APÓS CONCLUIR A INTERAÇÃO MANUAL
-            await db.collection("keys").doc(keyEmProgresso.id).delete();
-
+            await registrarHistoricoEConcluir(keyEmProgresso.id, keyEmProgresso, `Resposta enviada: ${resposta}`);
             bootstrap.Modal.getInstance(document.getElementById('modalInteracaoManual')).hide();
+            keyEmProgresso = null;
+        }
 
-            document.getElementById('textoProdutoResgatado').innerText = keyEmProgresso.conteudo;
+        async function registrarHistoricoEConcluir(keyId, dadosKey, detalhesExtra) {
+            // Salva no histórico do usuário logado no Firestore
+            if(usuarioAtual) {
+                await db.collection("historico_compras").add({
+                    comprador: usuarioAtual,
+                    produtoTitulo: dadosKey.produtoTitulo,
+                    vendedor: dadosKey.vendedor || 'Shorye',
+                    chave: keyId,
+                    conteudo: dadosKey.conteudo,
+                    detalhes: detalhesExtra,
+                    data: new Date().toLocaleDateString('pt-BR')
+                });
+            }
+
+            // Apaga a key da nuvem para que não possa ser usada novamente
+            await db.collection("keys").doc(keyId).delete();
+
+            document.getElementById('textoProdutoResgatado').innerText = dadosKey.conteudo;
             new bootstrap.Modal(document.getElementById('modalEntregaSucesso')).show();
             carregarKeysGeradas();
-            keyEmProgresso = null;
+            carregarHistoricoCliente();
+        }
+
+        async function carregarHistoricoCliente() {
+            const container = document.getElementById('listaHistoricoKeysComprador');
+            if(!container || !db || !usuarioAtual) return;
+
+            try {
+                let snapshot = await db.collection("historico_compras").where("comprador", "==", usuarioAtual).get();
+                if(snapshot.empty) {
+                    container.innerHTML = `<span class="text-muted small">Nenhum resgate encontrado no seu histórico.</span>`;
+                    return;
+                }
+
+                container.innerHTML = '';
+                snapshot.forEach(doc => {
+                    let h = doc.data();
+                    container.innerHTML += `
+                        <div class="purchase-history-card">
+                            <div>
+                                <h6 class="mb-1 fs-6">${h.produtoTitulo}</h6>
+                                <p class="mb-1 small text-muted">Vendedor: ${h.vendedor} • Data: ${h.data}</p>
+                                <p class="mb-0 small text-info">${h.detalhes}</p>
+                            </div>
+                            <div class="text-end">
+                                <span class="badge bg-success mb-1">Key Usada</span>
+                                <div><code class="text-white small">${h.chave}</code></div>
+                            </div>
+                        </div>
+                    `;
+                });
+            } catch(e) {
+                console.log("Erro ao carregar histórico:", e);
+            }
+        }
+
+        // Funções de navegação dentro do Modal da Engrenagem
+        function switchClientTab(evt, paneId) {
+            document.querySelectorAll('.client-pane').forEach(p => p.classList.remove('active'));
+            document.querySelectorAll('.tab-btn-client').forEach(b => b.classList.remove('active'));
+
+            document.getElementById(paneId).classList.add('active');
+            evt.currentTarget.classList.add('active');
+        }
+
+        function enviarMensagemChat() {
+            const input = document.getElementById('inputChatMessage');
+            const texto = input.value.trim();
+            if(!texto) return;
+
+            const area = document.getElementById('chatMessagesArea');
+            const msgDiv = document.createElement('div');
+            msgDiv.className = 'chat-msg outgoing';
+            msgDiv.innerText = texto;
+            area.appendChild(msgDiv);
+
+            input.value = '';
+            area.scrollTop = area.scrollHeight;
+        }
+
+        function checkChatEnter(e) {
+            if(e.key === 'Enter') {
+                enviarMensagemChat();
+            }
         }
     </script>
 </body>
